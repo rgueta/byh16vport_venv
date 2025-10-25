@@ -3,7 +3,7 @@ import time
 import board, busio
 from digitalio import DigitalInOut
 from adafruit_pn532.spi import PN532_SPI
-from server import unlock_action  # importa la función (o publica a /unlock endpoint)
+from server_v1 import unlock_action  # importa la función (o publica a /unlock endpoint)
 
 # SPI wiring: adjust cs pin
 spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
