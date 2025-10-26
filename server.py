@@ -1,103 +1,116 @@
-from flask import Flask, Response, render_template
+#!/usr/bin/env python3
+from flask import Flask, Response, render_template_string, render_template
 from picamera2 import Picamera2
-import io, time, subprocess, threading
-from PIL import Image
-import atexit
+import io, threading, time
 
 app = Flask(__name__)
 
+# --- Configurar cámara ---
+picam2 = Picamera2()
+config = picam2.create_preview_configuration(
+    main={"size": (640, 480), "format": "XBGR8888"}
+)
+picam2.configure(config)
+picam2.start()
 
-# --- Configuración de la cámara ---
-def release_camera_processes():
-    """Mata procesos que bloquean la cámara."""
-    print("🧹 Verificando procesos activos de cámara...")
-    subprocess.run(["sudo", "pkill", "-f", "libcamera"], stderr=subprocess.DEVNULL)
-    subprocess.run(["sudo", "pkill", "-f", "rpicam"], stderr=subprocess.DEVNULL)
-    time.sleep(1)
+frame_lock = threading.Lock()
+frame = None
+running = True
 
 
-def start_camera():
-    try:
-        release_camera_processes()
-        picam = Picamera2()
-        config = picam.create_preview_configuration(
-            {"size": (640, 480), "format": "XBGR8888"}
-        )
-        picam.configure(config)
-        picam.start()
-        time.sleep(2)
-        print("✅ Cámara inicializada correctamente")
-        return picam
-    except Exception as e:
-        print(f"⚠️ Primer intento falló: {e}")
-        release_camera_processes()
+def capture_frames():
+    global frame
+    while running:
         try:
-            picam = Picamera2()
-            config = picam.create_preview_configuration(
-                {"size": (640, 480), "format": "XBGR8888"}
-            )
-            picam.configure(config)
-            picam.start()
-            time.sleep(2)
-            print("✅ Cámara recuperada tras reinicio")
-            return picam
-        except Exception as e2:
-            print(f"❌ Error definitivo: {e2}")
-            return None
+            buf = io.BytesIO()
+            picam2.capture_file(buf, format="jpeg")
+            buf.seek(0)
+            with frame_lock:
+                frame = buf.read()
+            time.sleep(0.05)
+        except Exception as e:
+            print(f"⚠️ Error en captura: {e}")
+            time.sleep(1)
 
 
-# --- Función para generar el flujo MJPEG ---
-def generate_frames():
+threading.Thread(target=capture_frames, daemon=True).start()
+
+
+def generate_stream():
+    global frame
     while True:
-        frame = picam2.capture_array()
-        # Convertir a JPEG
-        image = Image.fromarray(frame[..., :3])
-        buffer = io.BytesIO()
-        image.save(buffer, format="JPEG")
-        frame_bytes = buffer.getvalue()
-
-        yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n")
+        with frame_lock:
+            if frame is None:
+                continue
+            data = frame
+        yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + data + b"\r\n")
 
 
-# --- Rutas Flask ---
+# --- HTML minimalista ---
+HTML_PAGE = """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Videoportero</title>
+<style>
+body {
+  margin:0; background:#111; color:white; font-family:sans-serif;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;
+}
+img {
+  width:100%; max-width:640px; border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.6);
+}
+button {
+  margin-top:10px; padding:10px 20px; border:none; border-radius:6px;
+  background:#2196F3; color:white; cursor:pointer;
+}
+button:hover { background:#0b7dda; }
+</style>
+</head>
+<body>
+<h2>📷 Videoportero</h2>
+<img id="stream" src="/video_feed">
+<canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+<button onclick="capturar()">📸 Capturar Foto</button>
+<script>
+function capturar() {
+  const video = document.getElementById('stream');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const enlace = document.createElement('a');
+  enlace.download = 'captura_' + new Date().toISOString().replace(/[:.]/g,'_') + '.jpg';
+  enlace.href = canvas.toDataURL('image/jpeg');
+  enlace.click();
+}
+</script>
+</body>
+</html>
+"""
+
+
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template_string(HTML_PAGE)
 
 
 @app.route("/schema1")
 def schema1():
-    return render_template("index1.html")
+    return render_template("index.html")
 
 
 @app.route("/video_feed")
 def video_feed():
     return Response(
-        generate_frames(), mimetype="multipart/x-mixed-replace; boundary=frame"
+        generate_stream(), mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
 
-picam2 = start_camera()
-
-if not picam2:
-    print("🚫 No se pudo acceder a la cámara. Intenta desconectar otros procesos.")
-    exit(1)
-
-# --- Cierre limpio al terminar -----------------------------
-import atexit
-
-
-def cleanup_camera():
-    try:
-        print("🧹 Liberando cámara y hilos...")
-        picam2.stop()
-        time.sleep(0.5)
-        release_camera_processes()
-    except Exception as e:
-        print(f"⚠️ Error al limpiar cámara: {e}")
-
-
-# atexit.register(cleanup_camera)
-
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8000, use_reloader=False, threaded=True)
+    try:
+        app.run(host="0.0.0.0", port=5000, threaded=True)
+    finally:
+        running = False
+        picam2.stop()

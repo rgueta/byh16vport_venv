@@ -1,0 +1,240 @@
+:root {
+    --bg: #0f1724;
+    --card: #0b1220;
+    --accent: #06b6d4;
+    --muted: #9aa4b2;
+    --btn-radius: 14px;
+    --gap: 12px;
+}
+* {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial;
+    background: linear-gradient(180deg, #071024 0%, #031018 100%);
+    color: #e6eef6;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+}
+
+/* Layout container */
+.container {
+    width: 100%;
+    max-width: 1100px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: var(--gap);
+    align-items: start;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #1e293b;
+    border-radius: 10px;
+}
+.status-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.status-item {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+/* Make single column on small screens */
+@media (max-width: 880px) {
+    .container {
+        grid-template-columns: 1fr;
+        padding-bottom: 18px;
+    }
+    .controls {
+        order: 2;
+        width: 100%;
+    }
+    .video-card {
+        order: 1;
+    }
+}
+
+.card {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.02),
+        rgba(255, 255, 255, 0.01)
+    );
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
+}
+
+/* Video area */
+.video-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+}
+.video-inner {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 360px;
+    aspect-ratio: 16/9;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* mjpeg image fallback and hls video */
+#mjpeg,
+#hlsVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Overlay top bar */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.title {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+.status {
+    font-size: 0.9rem;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.15);
+}
+
+/* Controls column */
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+
+/* Buttons layout */
+.btn-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+@media (max-width: 480px) {
+    .btn-grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
+
+.btn {
+    border: 0;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.03),
+        rgba(255, 255, 255, 0.01)
+    );
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
+    box-shadow: 0 6px 16px rgba(2, 6, 23, 0.45);
+    min-height: 56px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.btn:active {
+    transform: translateY(2px) scale(0.998);
+}
+.btn.primary {
+    background: linear-gradient(
+        90deg,
+        rgba(6, 182, 212, 0.14),
+        rgba(96, 165, 250, 0.06)
+    );
+    border: 1px solid rgba(6, 182, 212, 0.12);
+}
+.btn.warn {
+    background: linear-gradient(
+        90deg,
+        rgba(253, 186, 116, 0.07),
+        rgba(250, 204, 21, 0.03)
+    );
+    border: 1px solid rgba(250, 204, 21, 0.07);
+}
+
+.small {
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+
+/* Fullscreen helper */
+.fs-hint {
+    font-size: 0.86rem;
+    color: var(--muted);
+    margin-top: 6px;
+    text-align: center;
+}
+
+/* snapshot thumbnail */
+.thumb {
+    width: 100%;
+    height: 120px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #031426, #02101a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    overflow: hidden;
+}
+.thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* footer small info */
+.muted-block {
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding-top: 6px;
+    text-align: center;
+}

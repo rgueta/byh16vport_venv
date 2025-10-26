@@ -1,138 +1,191 @@
 <!doctype html>
 <html>
     <head>
-        <meta charset="utf-8" />
-        <title>Videoportero</title>
-        <style>
-            body {
-                background-color: #111;
-                color: #fff;
-                text-align: center;
-                font-family: sans-serif;
-            }
-            img {
-                border: 3px solid #333;
-                border-radius: 10px;
-                margin-top: 20px;
-            }
-            button {
-                margin: 10px;
-                padding: 10px 20px;
-                font-size: 18px;
-                border-radius: 10px;
-                border: none;
-            }
-            .btn-open {
-                background: #28a745;
-                color: white;
-            }
-            .btn-nfc {
-                background: #007bff;
-                color: white;
-            }
-        </style>
+        <title>Video Portero - Stream Funcional..</title>
+        <meta charset="UTF-8" />
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='css/pages/index1.css') }}"
+        />
     </head>
     <body>
-        <h3>Video Portero</h3>
-        <!--<video
-            id="remoteVideo"
-            autoplay
-            playsinline
-            controls
-            style="width: 640px; height: 480px; border: 1px solid #333"
-        ></video>-->
-        <img src="{{ url_for('video_feed') }}" width="640" height="480" />
-        <div>
-            <label
-                >Token:
-                <input
-                    id="token"
-                    value="cambia_este_token"
-                    style="width: 280px"
-            /></label>
-            <button id="connect">Conectar</button>
-            <button id="hangup" disabled>Desconectar</button>
-            <button id="unlock" disabled>Abrir puerta (si autorizado)</button>
+        <div class="container">
+            <div class="header">
+                <h1>🚪 Video Portero Inteligente..</h1>
+                <p>Stream MJPEG Funcional - Modo Diagnóstico</p>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item" id="streamStatus">
+                    <h3>Stream</h3>
+                    <p>🔄 CONECTANDO...</p>
+                </div>
+                <div class="status-item" id="doorStatus">
+                    <h3>Puerta</h3>
+                    <p>🔒 CERRADA</p>
+                </div>
+                <div class="status-item" id="frameStatus">
+                    <h3>Frames</h3>
+                    <p>0</p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="unlockDoor()">
+                    🔓 Abrir Puerta
+                </button>
+                <button class="btn" onclick="refreshStream()">
+                    🔄 Reiniciar Stream
+                </button>
+                <button class="btn" onclick="testSnapshot()">
+                    🖼️ Probar Imagen
+                </button>
+                <button class="btn" onclick="checkStatus()">
+                    📊 Estado Sistema
+                </button>
+            </div>
+
+            <div class="video-container">
+                <img
+                    src="{{ url_for('video_feed') }}"
+                    width="640"
+                    height="480"
+                />
+            </div>
+
+            <div
+                style="background: #1e293b; padding: 20px; border-radius: 10px"
+            >
+                <h3>🔍 Información de Diagnóstico</h3>
+                <div id="debugInfo">
+                    <p>Conectando al servidor...</p>
+                </div>
+            </div>
         </div>
-        <!--<script>
-            let pc = null;
-            const remoteVideo = document.getElementById("remoteVideo");
 
-            async function connect() {
-                const token = document.getElementById("token").value;
-                pc = new RTCPeerConnection({
-                    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-                });
+        <script>
+            let streamRetries = 0;
+            const maxRetries = 5;
 
-                pc.ontrack = (e) => {
-                    if (remoteVideo.srcObject !== e.streams[0]) {
-                        remoteVideo.srcObject = e.streams[0];
-                    }
-                };
+            function onStreamLoad() {
+                console.log("✅ Stream MJPEG cargado correctamente");
+                document.getElementById("loadingText").style.display = "none";
+                document.getElementById("streamStatus").innerHTML =
+                    "<h3>Stream</h3><p>✅ ACTIVO</p>";
+                streamRetries = 0;
 
-                // add local mic to send to server (optional)
-                let localStream = null;
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: true,
-                        video: false,
-                    });
-                    localStream
-                        .getTracks()
-                        .forEach((t) => pc.addTrack(t, localStream));
-                } catch (e) {
-                    console.log("No mic or denied", e);
-                }
-
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-
-                const res = await fetch("/offer", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        sdp: pc.localDescription.sdp,
-                        type: pc.localDescription.type,
-                        token: token,
-                    }),
-                });
-
-                if (!res.ok) {
-                    alert("Token inválido o error");
-                    return;
-                }
-                const answer = await res.json();
-                await pc.setRemoteDescription(answer);
-                document.getElementById("hangup").disabled = false;
-                document.getElementById("unlock").disabled = false;
+                // Obtener dimensiones reales
+                const stream = document.getElementById("videoStream");
+                console.log(
+                    "Dimensiones del stream:",
+                    stream.naturalWidth,
+                    "x",
+                    stream.naturalHeight,
+                );
             }
 
-            function hangup() {
-                if (pc) {
-                    pc.close();
-                    pc = null;
+            function onStreamError() {
+                console.error("❌ Error cargando stream MJPEG");
+                streamRetries++;
+
+                const statusElem = document.getElementById("streamStatus");
+                statusElem.innerHTML = `<h3>Stream</h3><p>❌ ERROR (intento ${streamRetries}/${maxRetries})</p>`;
+
+                if (streamRetries < maxRetries) {
+                    setTimeout(refreshStream, 2000);
+                } else {
+                    document.getElementById("loadingText").textContent =
+                        "❌ No se pudo cargar el stream";
                 }
-                document.getElementById("hangup").disabled = true;
-                document.getElementById("unlock").disabled = true;
+            }
+
+            function refreshStream() {
+                console.log("Reiniciando stream...");
+                const stream = document.getElementById("videoStream");
+                const loadingText = document.getElementById("loadingText");
+
+                loadingText.style.display = "block";
+                loadingText.textContent = "🎥 Reconectando stream...";
+
+                // Forzar recarga con timestamp
+                stream.src = "/video_feed?t=" + Date.now();
             }
 
             async function unlockDoor() {
-                const token = document.getElementById("token").value;
-                const res = await fetch(
-                    "/unlock?token=" + encodeURIComponent(token),
-                    {
+                try {
+                    const response = await fetch("/api/unlock", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ reason: "web:button" }),
-                    },
-                );
-                if (res.ok) alert("Pedido enviado");
-                else alert("No autorizado");
+                    });
+                    const result = await response.json();
+                    alert(result.message);
+                    updateDoorStatus(false);
+                } catch (error) {
+                    alert("Error al abrir puerta: " + error);
+                }
             }
 
-            document.getElementById("connect").onclick = connect;
-            document.getElementById("hangup").onclick = hangup;
-            document.getElementById("unlock").onclick = unlockDoor;
-        </script>-->
+            function updateDoorStatus(locked) {
+                const doorElem = document.getElementById("doorStatus");
+                if (locked) {
+                    doorElem.innerHTML = "<h3>Puerta</h3><p>🔒 CERRADA</p>";
+                } else {
+                    doorElem.innerHTML = "<h3>Puerta</h3><p>🔓 ABIERTA</p>";
+                    setTimeout(() => updateDoorStatus(true), 10000);
+                }
+            }
+
+            async function testSnapshot() {
+                try {
+                    const response = await fetch("/snapshot");
+                    const blob = await response.blob();
+                    console.log("Snapshot recibido:", blob.size, "bytes");
+                    alert(
+                        `✅ Snapshot funcionando: ${blob.size} bytes recibidos`,
+                    );
+                } catch (error) {
+                    alert("❌ Error en snapshot: " + error);
+                }
+            }
+
+            async function checkStatus() {
+                try {
+                    const response = await fetch("/api/status");
+                    const status = await response.json();
+
+                    document.getElementById("frameStatus").innerHTML =
+                        `<h3>Frames</h3><p>${status.frames_generated}</p>`;
+
+                    document.getElementById("debugInfo").innerHTML = `
+                    <p><strong>Estado del sistema:</strong></p>
+                    <ul>
+                        <li>Frames generados: ${status.frames_generated}</li>
+                        <li>Stream activo: ${status.stream_active ? "✅ Sí" : "❌ No"}</li>
+                        <li>Puerta: ${status.door_locked ? "🔒 Cerrada" : "🔓 Abierta"}</li>
+                    </ul>
+                `;
+                } catch (error) {
+                    console.error("Error obteniendo estado:", error);
+                }
+            }
+
+            // Inicialización
+            document.addEventListener("DOMContentLoaded", function () {
+                console.log("🎬 Iniciando aplicación de video portero");
+
+                // Verificar estado cada 5 segundos
+                setInterval(checkStatus, 5000);
+
+                // Verificar stream cada 10 segundos
+                setInterval(() => {
+                    const stream = document.getElementById("videoStream");
+                    if (stream.naturalWidth === 0) {
+                        console.log(
+                            "Stream parece no estar cargado, reintentando...",
+                        );
+                        refreshStream();
+                    }
+                }, 10000);
+            });
+        </script>
     </body>
 </html>
