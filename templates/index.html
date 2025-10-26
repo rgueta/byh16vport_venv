@@ -44,10 +44,17 @@
 
                 <div class="video-inner" id="videoInner">
                     <img
+                        id="stream"
                         src="{{ url_for('video_feed') }}"
                         width="640"
                         height="480"
                     />
+                    <canvas
+                        id="canvas"
+                        width="640"
+                        height="480"
+                        style="display: none"
+                    ></canvas>
                 </div>
 
                 <div
@@ -103,8 +110,13 @@
                     >
                         🔑 Desbloquear
                     </button>
-                    <button class="btn" id="snapshotBtn" title="Tomar foto">
-                        📸 Captura
+                    <button
+                        class="btn"
+                        id="snapshotBtn"
+                        title="Tomar foto"
+                        onclick="capturar()"
+                    >
+                        📸 Captura.
                     </button>
                     <button
                         class="btn"
@@ -217,6 +229,21 @@
                 fpsLabel.textContent = frames;
                 frames = 0;
             }, 1000);
+
+            // Capture image--------
+            function capturar() {
+                const video = document.getElementById("stream");
+                const canvas = document.getElementById("canvas");
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const enlace = document.createElement("a");
+                enlace.download =
+                    "captura_" +
+                    new Date().toISOString().replace(/[:.]/g, "_") +
+                    ".jpg";
+                enlace.href = canvas.toDataURL("image/jpeg");
+                enlace.click();
+            }
 
             // Fallback function — shows <video> and hides <img>
             function tryFallbackToVideo() {

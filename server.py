@@ -103,6 +103,11 @@ def schema1():
     return render_template("index.html")
 
 
+@app.route("/schema2")
+def schema2():
+    return render_template("index2.html")
+
+
 @app.route("/video_feed")
 def video_feed():
     return Response(
