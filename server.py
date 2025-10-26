@@ -1,17 +1,49 @@
-from flask import Flask, Response, render_template_string
+from flask import Flask, Response, render_template
 from picamera2 import Picamera2
-import io
-import time
+import io, time, subprocess, threading
 from PIL import Image
+import atexit
 
 app = Flask(__name__)
 
+
 # --- Configuración de la cámara ---
-picam2 = Picamera2()
-config = picam2.create_preview_configuration({"size": (640, 480), "format": "XBGR8888"})
-picam2.configure(config)
-picam2.start()
-time.sleep(2)  # pequeño retardo para estabilizar
+def release_camera_processes():
+    """Mata procesos que bloquean la cámara."""
+    print("🧹 Verificando procesos activos de cámara...")
+    subprocess.run(["sudo", "pkill", "-f", "libcamera"], stderr=subprocess.DEVNULL)
+    subprocess.run(["sudo", "pkill", "-f", "rpicam"], stderr=subprocess.DEVNULL)
+    time.sleep(1)
+
+
+def start_camera():
+    try:
+        release_camera_processes()
+        picam = Picamera2()
+        config = picam.create_preview_configuration(
+            {"size": (640, 480), "format": "XBGR8888"}
+        )
+        picam.configure(config)
+        picam.start()
+        time.sleep(2)
+        print("✅ Cámara inicializada correctamente")
+        return picam
+    except Exception as e:
+        print(f"⚠️ Primer intento falló: {e}")
+        release_camera_processes()
+        try:
+            picam = Picamera2()
+            config = picam.create_preview_configuration(
+                {"size": (640, 480), "format": "XBGR8888"}
+            )
+            picam.configure(config)
+            picam.start()
+            time.sleep(2)
+            print("✅ Cámara recuperada tras reinicio")
+            return picam
+        except Exception as e2:
+            print(f"❌ Error definitivo: {e2}")
+            return None
 
 
 # --- Función para generar el flujo MJPEG ---
@@ -30,28 +62,12 @@ def generate_frames():
 # --- Rutas Flask ---
 @app.route("/")
 def index():
-    return render_template_string("""
-        <html>
-        <head>
-          <title>Video Portero</title>
-          <style>
-            body { background-color: #111; color: #fff; text-align: center; font-family: sans-serif; }
-            img { border: 3px solid #333; border-radius: 10px; margin-top: 20px; }
-            button { margin: 10px; padding: 10px 20px; font-size: 18px; border-radius: 10px; border: none; }
-            .btn-open { background: #28a745; color: white; }
-            .btn-nfc { background: #007bff; color: white; }
-          </style>
-        </head>
-        <body>
-          <h1>🔔 Video Portero Raspberry Pi</h1>
-          <img src="{{ url_for('video_feed') }}" width="640" height="480">
-          <div>
-            <button class="btn-nfc">Leer Tarjeta NFC</button>
-            <button class="btn-open">Abrir Cerradura</button>
-          </div>
-        </body>
-        </html>
-    """)
+    return render_template("index.html")
+
+
+@app.route("/schema1")
+def schema1():
+    return render_template("index1.html")
 
 
 @app.route("/video_feed")
@@ -61,5 +77,27 @@ def video_feed():
     )
 
 
+picam2 = start_camera()
+
+if not picam2:
+    print("🚫 No se pudo acceder a la cámara. Intenta desconectar otros procesos.")
+    exit(1)
+
+# --- Cierre limpio al terminar -----------------------------
+import atexit
+
+
+def cleanup_camera():
+    try:
+        print("🧹 Liberando cámara y hilos...")
+        picam2.stop()
+        time.sleep(0.5)
+        release_camera_processes()
+    except Exception as e:
+        print(f"⚠️ Error al limpiar cámara: {e}")
+
+
+# atexit.register(cleanup_camera)
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, threaded=True)
+    app.run(debug=True, host="0.0.0.0", port=8000, use_reloader=False, threaded=True)

@@ -3,16 +3,45 @@
     <head>
         <meta charset="utf-8" />
         <title>Videoportero</title>
+        <style>
+            body {
+                background-color: #111;
+                color: #fff;
+                text-align: center;
+                font-family: sans-serif;
+            }
+            img {
+                border: 3px solid #333;
+                border-radius: 10px;
+                margin-top: 20px;
+            }
+            button {
+                margin: 10px;
+                padding: 10px 20px;
+                font-size: 18px;
+                border-radius: 10px;
+                border: none;
+            }
+            .btn-open {
+                background: #28a745;
+                color: white;
+            }
+            .btn-nfc {
+                background: #007bff;
+                color: white;
+            }
+        </style>
     </head>
     <body>
-        <h3>Videoportero</h3>
-        <video
+        <h3>Video Portero</h3>
+        <!--<video
             id="remoteVideo"
             autoplay
             playsinline
             controls
             style="width: 640px; height: 480px; border: 1px solid #333"
-        ></video>
+        ></video>-->
+        <img src="{{ url_for('video_feed') }}" width="640" height="480" />
         <div>
             <label
                 >Token:
@@ -25,7 +54,7 @@
             <button id="hangup" disabled>Desconectar</button>
             <button id="unlock" disabled>Abrir puerta (si autorizado)</button>
         </div>
-        <script>
+        <!--<script>
             let pc = null;
             const remoteVideo = document.getElementById("remoteVideo");
 
@@ -104,6 +133,6 @@
             document.getElementById("connect").onclick = connect;
             document.getElementById("hangup").onclick = hangup;
             document.getElementById("unlock").onclick = unlockDoor;
-        </script>
+        </script>-->
     </body>
 </html>
