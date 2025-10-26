@@ -1,65 +1,118 @@
-from flask import Flask, Response, render_template_string
+#!/usr/bin/env python3
+# version 3 con image capture
+
+from flask import Flask, Response, render_template_string, render_template
 from picamera2 import Picamera2
-import io
-import time
-from PIL import Image
+import io, threading, time
 
 app = Flask(__name__)
 
-# --- Configuración de la cámara ---
+# --- Configurar cámara ---
 picam2 = Picamera2()
-config = picam2.create_preview_configuration({"size": (640, 480), "format": "XBGR8888"})
+config = picam2.create_preview_configuration(
+    main={"size": (640, 480), "format": "XBGR8888"}
+)
 picam2.configure(config)
 picam2.start()
-time.sleep(2)  # pequeño retardo para estabilizar
+
+frame_lock = threading.Lock()
+frame = None
+running = True
 
 
-# --- Función para generar el flujo MJPEG ---
-def generate_frames():
+def capture_frames():
+    global frame
+    while running:
+        try:
+            buf = io.BytesIO()
+            picam2.capture_file(buf, format="jpeg")
+            buf.seek(0)
+            with frame_lock:
+                frame = buf.read()
+            time.sleep(0.05)
+        except Exception as e:
+            print(f"⚠️ Error en captura: {e}")
+            time.sleep(1)
+
+
+threading.Thread(target=capture_frames, daemon=True).start()
+
+
+def generate_stream():
+    global frame
     while True:
-        frame = picam2.capture_array()
-        # Convertir a JPEG
-        image = Image.fromarray(frame[..., :3])
-        buffer = io.BytesIO()
-        image.save(buffer, format="JPEG")
-        frame_bytes = buffer.getvalue()
-
-        yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n")
+        with frame_lock:
+            if frame is None:
+                continue
+            data = frame
+        yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + data + b"\r\n")
 
 
-# --- Rutas Flask ---
+# --- HTML minimalista ---
+HTML_PAGE = """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Videoportero</title>
+<style>
+body {
+  margin:0; background:#111; color:white; font-family:sans-serif;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;
+}
+img {
+  width:100%; max-width:640px; border-radius:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.6);
+}
+button {
+  margin-top:10px; padding:10px 20px; border:none; border-radius:6px;
+  background:#2196F3; color:white; cursor:pointer;
+}
+button:hover { background:#0b7dda; }
+</style>
+</head>
+<body>
+<h2>📷 Videoportero</h2>
+<img id="stream" src="/video_feed">
+<canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+<button onclick="capturar()">📸 Capturar Foto</button>
+<script>
+function capturar() {
+  const video = document.getElementById('stream');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const enlace = document.createElement('a');
+  enlace.download = 'captura_' + new Date().toISOString().replace(/[:.]/g,'_') + '.jpg';
+  enlace.href = canvas.toDataURL('image/jpeg');
+  enlace.click();
+}
+</script>
+</body>
+</html>
+"""
+
+
 @app.route("/")
 def index():
-    return render_template_string("""
-        <html>
-        <head>
-          <title>Video Portero</title>
-          <style>
-            body { background-color: #111; color: #fff; text-align: center; font-family: sans-serif; }
-            img { border: 3px solid #333; border-radius: 10px; margin-top: 20px; }
-            button { margin: 10px; padding: 10px 20px; font-size: 18px; border-radius: 10px; border: none; }
-            .btn-open { background: #28a745; color: white; }
-            .btn-nfc { background: #007bff; color: white; }
-          </style>
-        </head>
-        <body>
-          <h1>🔔 Video Portero Raspberry Pi</h1>
-          <img src="{{ url_for('video_feed') }}" width="640" height="480">
-          <div>
-            <button class="btn-nfc">Leer Tarjeta NFC</button>
-            <button class="btn-open">Abrir Cerradura</button>
-          </div>
-        </body>
-        </html>
-    """)
+    return render_template_string(HTML_PAGE)
+
+
+@app.route("/schema1")
+def schema1():
+    return render_template("index.html")
 
 
 @app.route("/video_feed")
 def video_feed():
     return Response(
-        generate_frames(), mimetype="multipart/x-mixed-replace; boundary=frame"
+        generate_stream(), mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, threaded=True)
+    try:
+        app.run(host="0.0.0.0", port=5000, threaded=True)
+    finally:
+        running = False
+        picam2.stop()

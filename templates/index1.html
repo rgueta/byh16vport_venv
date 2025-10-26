@@ -1,0 +1,191 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Video Portero - Stream Funcional..</title>
+        <meta charset="UTF-8" />
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='css/pages/index1.css') }}"
+        />
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚪 Video Portero Inteligente..</h1>
+                <p>Stream MJPEG Funcional - Modo Diagnóstico</p>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item" id="streamStatus">
+                    <h3>Stream</h3>
+                    <p>🔄 CONECTANDO...</p>
+                </div>
+                <div class="status-item" id="doorStatus">
+                    <h3>Puerta</h3>
+                    <p>🔒 CERRADA</p>
+                </div>
+                <div class="status-item" id="frameStatus">
+                    <h3>Frames</h3>
+                    <p>0</p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="unlockDoor()">
+                    🔓 Abrir Puerta
+                </button>
+                <button class="btn" onclick="refreshStream()">
+                    🔄 Reiniciar Stream
+                </button>
+                <button class="btn" onclick="testSnapshot()">
+                    🖼️ Probar Imagen
+                </button>
+                <button class="btn" onclick="checkStatus()">
+                    📊 Estado Sistema
+                </button>
+            </div>
+
+            <div class="video-container">
+                <img
+                    src="{{ url_for('video_feed') }}"
+                    width="640"
+                    height="480"
+                />
+            </div>
+
+            <div
+                style="background: #1e293b; padding: 20px; border-radius: 10px"
+            >
+                <h3>🔍 Información de Diagnóstico</h3>
+                <div id="debugInfo">
+                    <p>Conectando al servidor...</p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let streamRetries = 0;
+            const maxRetries = 5;
+
+            function onStreamLoad() {
+                console.log("✅ Stream MJPEG cargado correctamente");
+                document.getElementById("loadingText").style.display = "none";
+                document.getElementById("streamStatus").innerHTML =
+                    "<h3>Stream</h3><p>✅ ACTIVO</p>";
+                streamRetries = 0;
+
+                // Obtener dimensiones reales
+                const stream = document.getElementById("videoStream");
+                console.log(
+                    "Dimensiones del stream:",
+                    stream.naturalWidth,
+                    "x",
+                    stream.naturalHeight,
+                );
+            }
+
+            function onStreamError() {
+                console.error("❌ Error cargando stream MJPEG");
+                streamRetries++;
+
+                const statusElem = document.getElementById("streamStatus");
+                statusElem.innerHTML = `<h3>Stream</h3><p>❌ ERROR (intento ${streamRetries}/${maxRetries})</p>`;
+
+                if (streamRetries < maxRetries) {
+                    setTimeout(refreshStream, 2000);
+                } else {
+                    document.getElementById("loadingText").textContent =
+                        "❌ No se pudo cargar el stream";
+                }
+            }
+
+            function refreshStream() {
+                console.log("Reiniciando stream...");
+                const stream = document.getElementById("videoStream");
+                const loadingText = document.getElementById("loadingText");
+
+                loadingText.style.display = "block";
+                loadingText.textContent = "🎥 Reconectando stream...";
+
+                // Forzar recarga con timestamp
+                stream.src = "/video_feed?t=" + Date.now();
+            }
+
+            async function unlockDoor() {
+                try {
+                    const response = await fetch("/api/unlock", {
+                        method: "POST",
+                    });
+                    const result = await response.json();
+                    alert(result.message);
+                    updateDoorStatus(false);
+                } catch (error) {
+                    alert("Error al abrir puerta: " + error);
+                }
+            }
+
+            function updateDoorStatus(locked) {
+                const doorElem = document.getElementById("doorStatus");
+                if (locked) {
+                    doorElem.innerHTML = "<h3>Puerta</h3><p>🔒 CERRADA</p>";
+                } else {
+                    doorElem.innerHTML = "<h3>Puerta</h3><p>🔓 ABIERTA</p>";
+                    setTimeout(() => updateDoorStatus(true), 10000);
+                }
+            }
+
+            async function testSnapshot() {
+                try {
+                    const response = await fetch("/snapshot");
+                    const blob = await response.blob();
+                    console.log("Snapshot recibido:", blob.size, "bytes");
+                    alert(
+                        `✅ Snapshot funcionando: ${blob.size} bytes recibidos`,
+                    );
+                } catch (error) {
+                    alert("❌ Error en snapshot: " + error);
+                }
+            }
+
+            async function checkStatus() {
+                try {
+                    const response = await fetch("/api/status");
+                    const status = await response.json();
+
+                    document.getElementById("frameStatus").innerHTML =
+                        `<h3>Frames</h3><p>${status.frames_generated}</p>`;
+
+                    document.getElementById("debugInfo").innerHTML = `
+                    <p><strong>Estado del sistema:</strong></p>
+                    <ul>
+                        <li>Frames generados: ${status.frames_generated}</li>
+                        <li>Stream activo: ${status.stream_active ? "✅ Sí" : "❌ No"}</li>
+                        <li>Puerta: ${status.door_locked ? "🔒 Cerrada" : "🔓 Abierta"}</li>
+                    </ul>
+                `;
+                } catch (error) {
+                    console.error("Error obteniendo estado:", error);
+                }
+            }
+
+            // Inicialización
+            document.addEventListener("DOMContentLoaded", function () {
+                console.log("🎬 Iniciando aplicación de video portero");
+
+                // Verificar estado cada 5 segundos
+                setInterval(checkStatus, 5000);
+
+                // Verificar stream cada 10 segundos
+                setInterval(() => {
+                    const stream = document.getElementById("videoStream");
+                    if (stream.naturalWidth === 0) {
+                        console.log(
+                            "Stream parece no estar cargado, reintentando...",
+                        );
+                        refreshStream();
+                    }
+                }, 10000);
+            });
+        </script>
+    </body>
+</html>
