@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # version 3 con image capture
 
-from flask import Flask, Response, render_template_string, render_template
+from flask import Flask, Response, render_template
 from picamera2 import Picamera2
 import io, threading, time
 
@@ -48,64 +48,14 @@ def generate_stream():
         yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + data + b"\r\n")
 
 
-# --- HTML minimalista ---
-HTML_PAGE = """
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Videoportero</title>
-<style>
-body {
-  margin:0; background:#111; color:white; font-family:sans-serif;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;
-}
-img {
-  width:100%; max-width:640px; border-radius:10px;
-  box-shadow:0 0 10px rgba(0,0,0,0.6);
-}
-button {
-  margin-top:10px; padding:10px 20px; border:none; border-radius:6px;
-  background:#2196F3; color:white; cursor:pointer;
-}
-button:hover { background:#0b7dda; }
-</style>
-</head>
-<body>
-<h2>📷 Videoportero</h2>
-<img id="stream" src="/video_feed">
-<canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-<button onclick="capturar()">📸 Capturar Foto</button>
-<script>
-function capturar() {
-  const video = document.getElementById('stream');
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const enlace = document.createElement('a');
-  enlace.download = 'captura_' + new Date().toISOString().replace(/[:.]/g,'_') + '.jpg';
-  enlace.href = canvas.toDataURL('image/jpeg');
-  enlace.click();
-}
-</script>
-</body>
-</html>
-"""
-
-
 @app.route("/")
 def index():
-    return render_template_string(HTML_PAGE)
+    return render_template("index.html")
 
 
 @app.route("/schema1")
 def schema1():
-    return render_template("index.html")
-
-
-@app.route("/schema2")
-def schema2():
-    return render_template("index2.html")
+    return render_template("index1.html")
 
 
 @app.route("/video_feed")
