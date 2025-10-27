@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# version 3 con image capture
+#
 from flask import Flask, Response, render_template_string, render_template
 from picamera2 import Picamera2
 import io, threading, time
