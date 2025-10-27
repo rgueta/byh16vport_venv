@@ -13,7 +13,7 @@
     <body>
         <div class="container">
             <div class="header">
-                <h1>🚪 Video Portero Inteligente..</h1>
+                <h1>🚪 Video Portero Inteligente</h1>
                 <p>Stream MJPEG Funcional - Modo Diagnóstico</p>
             </div>
 
@@ -61,6 +61,7 @@
                         justify-content: space-between;
                     "
                 >
+                    <div id="status" class="small"></div>
                     <div class="small">
                         Touch-friendly UI — compatible PC & móviles
                     </div>
@@ -95,6 +96,7 @@
                         class="btn primary"
                         id="openBtn"
                         title="Abrir portón/puerta"
+                        onclick="abrirPuerta()"
                     >
                         🔓 Abrir
                     </button>
@@ -194,7 +196,7 @@
             let lastFrameTime = performance.now();
             let frames = 0;
             let fpsInterval = null;
-
+            //Revisar si se queda la funcion !!!
             function setStatus(connected) {
                 if (connected) {
                     connDot.style.background = "#10b981";
@@ -204,20 +206,6 @@
                     connText.textContent = "Desconectado";
                 }
             }
-
-            // Estimate fps for MJPEG by watching image loads
-            // mjpeg.addEventListener("load", () => {
-            //     frames++;
-            //     setStatus(true);
-            // });
-            // mjpeg.addEventListener("error", () => {
-            //     // If error, switch to video fallback
-            //     console.warn(
-            //         "MJPEG stream error — intentando fallback a video HLS.",
-            //     );
-            //     setStatus(false);
-            //     tryFallbackToVideo();
-            // });
 
             // Start FPS meter
             fpsInterval = setInterval(() => {
@@ -240,6 +228,47 @@
                 enlace.click();
             }
 
+            // ⚙️ Token de seguridad (debe coincidir con config.json)
+            const API_TOKEN = "1234";
+
+            async function abrirPuerta() {
+                const btn = document.getElementById("unlockBtn");
+                const status = document.getElementById("status");
+
+                btn.disabled = true;
+                status.textContent = "⏳ Enviando señal...";
+                status.style.color = "#cccccc";
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/unlock?token=${API_TOKEN}`,
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ reason: "web_button" }),
+                        },
+                    );
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        status.textContent = "✅ Puerta abierta correctamente";
+                        status.style.color = "#4caf50";
+                    } else {
+                        status.textContent = "❌ Error al abrir puerta";
+                        status.style.color = "#f44336";
+                    }
+                } catch (err) {
+                    status.textContent = "⚠️ Error de conexión con el servidor";
+                    status.style.color = "#ff9800";
+                } finally {
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        status.textContent = "";
+                    }, 4000);
+                }
+            }
+
+            //Revisar si se queda la funcion !!!
             // Fallback function — shows <video> and hides <img>
             function tryFallbackToVideo() {
                 // Only attempt if hls URL likely available
@@ -353,6 +382,7 @@
                 thumb.appendChild(img);
                 thumbText.style.display = "none";
             }
+
             function displayThumbnailFromUrl(url) {
                 thumb.innerHTML = "";
                 const img = document.createElement("img");
@@ -362,17 +392,17 @@
             }
 
             // Optional: ping server health every N seconds
-            async function pingHealth() {
-                // try {
-                //     const r = await fetch(API_BASE + "/health");
-                //     if (r.ok) setStatus(true);
-                //     else setStatus(false);
-                // } catch (e) {
-                //     setStatus(false);
-                // }
-            }
-            setInterval(pingHealth, 5000);
-            pingHealth();
+            // async function pingHealth() {
+            //     try {
+            //         const r = await fetch(API_BASE + "/health");
+            //         if (r.ok) setStatus(true);
+            //         else setStatus(false);
+            //     } catch (e) {
+            //         setStatus(false);
+            //     }
+            // }
+            // setInterval(pingHealth, 5000);
+            // pingHealth();
 
             // polite note: if your stream is HLS and browser lacks native support, add hls.js and attach it.
             // For MJPEG, keep /video_feed as an infinite multipart/x-mixed-replace stream from Flask.
