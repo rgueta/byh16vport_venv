@@ -1,23 +1,31 @@
 {
-  "camera": {
-    "resolution": [640, 480],
-    "format": "XBGR8888",
-    "frame_interval": 0.05
-  },
-  "server": {
-    "host": "0.0.0.0",
-    "port": 5000,
-    "debug": false
-  },
-  "lock": {
-    "gpio_pin": 17,
-    "active_high": true,
-    "unlock_duration": 3.0
-  },
-  "security": {
-    "api_token": "1234"
-  },
-  "logging": {
-    "level": "INFO"
-  }
+    "camera": {
+        "resolution": [640, 480],
+        "format": "XBGR8888",
+        "frame_interval": 0.05
+    },
+    "server": {
+        "host": "0.0.0.0",
+        "port": 5000,
+        "debug": false
+    },
+    "lock": {
+        "gpio_pin": 17,
+        "active_high": true,
+        "unlock_duration": 3.0
+    },
+    "button": {
+        "gpio_pin": 27,
+        "pullup": true
+    },
+    "security": {
+        "api_token": "1234"
+    },
+    "logging": {
+        "level": "INFO"
+    },
+    "buzzer": {
+        "gpio_pin": 22,
+        "duration": 0.5
+    }
 }
