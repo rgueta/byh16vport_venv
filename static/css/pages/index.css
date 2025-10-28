@@ -83,8 +83,10 @@ body {
     box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
 }
 
-/* Video area */
-.video-card {
+/* Video area comentada porque genera un zoom in */
+/* Utilizar esta parte solo para responsive*/
+/*Hay una tarea pendiente para esto */
+/*.video-card {
     position: relative;
     overflow: hidden;
     border-radius: 14px;
@@ -98,6 +100,13 @@ body {
     aspect-ratio: 16/9;
     border-radius: 12px;
     overflow: hidden;
+}*/
+
+img {
+    width: 100%;
+    max-width: 640px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
 }
 
 /* mjpeg image fallback and hls video */
@@ -228,7 +237,7 @@ body {
 .thumb img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /*object-fit: cover;*/
 }
 
 /* footer small info */
