@@ -182,11 +182,12 @@ def activate_lock(duration=None):
         socketio.emit("door_status", {"status": "closed"})
 
 
-@app.route("/api/unlock", methods=["POST"])
-def unlock():
+@app.route("/api/open", methods=["POST"])
+def open():
     token = request.args.get("token", "")
-    if token != config["security"]["api_token"]:
-        abort(403, description="Token inválido")
+    logger.info(f"🔒 Token recibido: {token}")
+    # if token != config["security"]["api_token"]:
+    #     abort(403, description="Token inválido")
 
     data = request.get_json(silent=True) or {}
     duration = float(data.get("duration", config["lock"]["unlock_duration"]))

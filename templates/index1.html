@@ -253,9 +253,10 @@
                 status.textContent = "⏳ Enviando señal...";
                 status.style.color = "#cccccc";
 
+                console.log(`open url: ${API_BASE}/open?token=${API_TOKEN}`);
                 try {
                     const response = await fetch(
-                        `${API_BASE}/unlock?token=${API_TOKEN}`,
+                        `${API_BASE}/open?token=${API_TOKEN}`,
                         {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -325,25 +326,25 @@
             }
 
             // Hook buttons
-            document
-                .getElementById("openBtn")
-                .addEventListener("click", async () => {
-                    const resp = await postAction("open");
-                    if (resp.ok) alert("Se ha enviado la orden de abrir.");
-                    else
-                        alert(
-                            "Error enviando orden: " +
-                                (resp.err && resp.err.message),
-                        );
-                });
+            // document
+            //     .getElementById("openBtn")
+            //     .addEventListener("click", async () => {
+            //         const resp = await postAction("open");
+            //         if (resp.ok) alert("Se ha enviado la orden de abrir.");
+            //         else
+            //             alert(
+            //                 "Error enviando orden: " +
+            //                     (resp.err && resp.err.message),
+            //             );
+            //     });
 
-            document
-                .getElementById("unlockBtn")
-                .addEventListener("click", async () => {
-                    const resp = await postAction("unlock");
-                    if (resp.ok) alert("Desbloqueo remoto enviado.");
-                    else alert("Error enviando desbloqueo.");
-                });
+            // document
+            //     .getElementById("unlockBtn")
+            //     .addEventListener("click", async () => {
+            //         const resp = await postAction("unlock");
+            //         if (resp.ok) alert("Desbloqueo remoto enviado.");
+            //         else alert("Error enviando desbloqueo.");
+            //     });
 
             document
                 .getElementById("snapshotBtn")
