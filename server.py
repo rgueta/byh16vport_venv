@@ -18,7 +18,6 @@ DEFAULT_CONFIG = {
     "logging": {"level": "INFO"},
 }
 
-
 def load_config(path="config.json"):
     config = DEFAULT_CONFIG.copy()
     try:
@@ -66,6 +65,7 @@ except Exception as e:
     logger.error(f"🚫 No se pudo inicializar la cámara: {e}")
     sys.exit(1)
 
+
 frame_lock = threading.Lock()
 frame = None
 running = True
@@ -94,7 +94,6 @@ threading.Thread(target=capture_frames, daemon=True).start()
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
 def generate_stream():
     global frame
     while True:
@@ -102,7 +101,8 @@ def generate_stream():
             if frame is None:
                 continue
             data = frame
-        yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + data + b"\r\n"
+        yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + data + b"\r\n")
+
 
 
 @app.route("/")
@@ -235,6 +235,7 @@ threading.Thread(target=listen_button, daemon=True).start()
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     try:
+<<<<<<< HEAD
         socketio.run(
             app,
             host=config["server"]["host"],
@@ -248,3 +249,9 @@ if __name__ == "__main__":
         if GPIO:
             GPIO.cleanup()
         logger.info("🧹 Servidor detenido correctamente")
+=======
+        app.run(host="0.0.0.0", port=5000, threaded=True)
+    finally:
+        running = False
+        picam2.stop()
+>>>>>>> origin/main
