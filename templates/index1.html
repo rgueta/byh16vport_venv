@@ -148,6 +148,12 @@
                 </div>
             </aside>
         </div>
+        <audio id="dooropen" preload="auto">
+            <source
+                src="{{ url_for('static', filename='sounds/open.mp3') }}"
+                type="audio/mpeg"
+            />
+        </audio>
 
         <audio id="doorbell" preload="auto">
             <source
@@ -241,6 +247,7 @@
             async function abrirPuerta() {
                 const btn = document.getElementById("unlockBtn");
                 const status = document.getElementById("status");
+                const beep = document.getElementById("dooropen");
 
                 btn.disabled = true;
                 status.textContent = "⏳ Enviando señal...";
@@ -260,6 +267,12 @@
                         const data = await response.json();
                         status.textContent = "✅ Puerta abierta correctamente";
                         status.style.color = "#4caf50";
+
+                        // 🔊 Reproducir beep de confirmación
+                        beep.currentTime = 0;
+                        beep.play().catch((err) =>
+                            console.warn("No se pudo reproducir beep:", err),
+                        );
                     } else {
                         status.textContent = "❌ Error al abrir puerta";
                         status.style.color = "#f44336";
