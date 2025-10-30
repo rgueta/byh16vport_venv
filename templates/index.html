@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <title>Videoportero - Panel</title>
+        <title>Videoportero - Panel...</title>
         <link
             rel="stylesheet"
             href="{{ url_for('static', filename='css/pages/index.css') }}"
@@ -13,7 +13,7 @@
     <body>
         <div class="container">
             <div class="header">
-                <h1>🚪 Video Portero Inteligente</h1>
+                <h1>🚪 Video Portero Inteligente.</h1>
                 <p>Stream MJPEG Funcional - Modo Diagnóstico</p>
             </div>
 
@@ -148,6 +148,19 @@
                 </div>
             </aside>
         </div>
+        <audio id="dooropen" preload="auto">
+            <source
+                src="{{ url_for('static', filename='sounds/open.mp3') }}"
+                type="audio/mpeg"
+            />
+        </audio>
+
+        <audio id="doorbell" preload="auto">
+            <source
+                src="{{ url_for('static', filename='sounds/doorbell.mp3') }}"
+                type="audio/mpeg"
+            />
+        </audio>
 
         <script>
             const STREAM_MJPEG = "/live.m3u8";
@@ -234,14 +247,16 @@
             async function abrirPuerta() {
                 const btn = document.getElementById("unlockBtn");
                 const status = document.getElementById("status");
+                const beep = document.getElementById("dooropen");
 
                 btn.disabled = true;
                 status.textContent = "⏳ Enviando señal...";
                 status.style.color = "#cccccc";
 
+                console.log(`open url: ${API_BASE}/open?token=${API_TOKEN}`);
                 try {
                     const response = await fetch(
-                        `${API_BASE}/unlock?token=${API_TOKEN}`,
+                        `${API_BASE}/open?token=${API_TOKEN}`,
                         {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -253,6 +268,12 @@
                         const data = await response.json();
                         status.textContent = "✅ Puerta abierta correctamente";
                         status.style.color = "#4caf50";
+
+                        // 🔊 Reproducir beep de confirmación
+                        beep.currentTime = 0;
+                        beep.play().catch((err) =>
+                            console.warn("No se pudo reproducir beep:", err),
+                        );
                     } else {
                         status.textContent = "❌ Error al abrir puerta";
                         status.style.color = "#f44336";
@@ -303,27 +324,6 @@
                     return { ok: false, err: err };
                 }
             }
-
-            // Hook buttons
-            document
-                .getElementById("openBtn")
-                .addEventListener("click", async () => {
-                    const resp = await postAction("open");
-                    if (resp.ok) alert("Se ha enviado la orden de abrir.");
-                    else
-                        alert(
-                            "Error enviando orden: " +
-                                (resp.err && resp.err.message),
-                        );
-                });
-
-            document
-                .getElementById("unlockBtn")
-                .addEventListener("click", async () => {
-                    const resp = await postAction("unlock");
-                    if (resp.ok) alert("Desbloqueo remoto enviado.");
-                    else alert("Error enviando desbloqueo.");
-                });
 
             document
                 .getElementById("snapshotBtn")
@@ -391,24 +391,134 @@
                 thumbText.style.display = "none";
             }
 
-<<<<<<< HEAD
-=======
-            // Optional: ping server health every N seconds
-            // async function pingHealth() {
-            //     try {
-            //         const r = await fetch(API_BASE + "/health");
-            //         if (r.ok) setStatus(true);
-            //         else setStatus(false);
-            //     } catch (e) {
-            //         setStatus(false);
-            //     }
-            // }
-            // setInterval(pingHealth, 5000);
-            // pingHealth();
+            // --- 🔔 Eventos del servidor (SSE) ------------------------
+            const evtSource = new EventSource("/events");
 
->>>>>>> origin/main
-            // polite note: if your stream is HLS and browser lacks native support, add hls.js and attach it.
-            // For MJPEG, keep /video_feed as an infinite multipart/x-mixed-replace stream from Flask.
+            evtSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("Evento recibido:", data);
+
+                if (data.type === "nfc_access") {
+                    const msg = data.allowed
+                        ? `✅ Tarjeta ${data.uid} autorizada — puerta abierta`
+                        : `🚫 Tarjeta ${data.uid} no autorizada`;
+                    showNotification(msg, data.allowed ? "success" : "error");
+                    if (data.allowed) {
+                        const audio = new Audio("/static/sounds/open.mp3");
+                        audio.play();
+                    } else {
+                        const audio = new Audio("/static/sounds/failed.mp3");
+                        audio.play();
+                    }
+                }
+            };
+
+            // Simple helper para mostrar notificaciones
+            function showNotification(msg, type = "info") {
+                const el = document.createElement("div");
+                el.textContent = msg;
+                el.className = `notif ${type}`;
+                Object.assign(el.style, {
+                    position: "fixed",
+                    bottom: "10px",
+                    right: "10px",
+                    background:
+                        type === "error"
+                            ? "#f44336"
+                            : type === "success"
+                              ? "#4caf50"
+                              : "#333",
+                    color: "#fff",
+                    padding: "10px 15px",
+                    borderRadius: "8px",
+                    zIndex: 9999,
+                    fontSize: "0.9rem",
+                    transition: "opacity 0.5s",
+                    opacity: 0.95,
+                });
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 4000);
+            }
+        </script>
+
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <script>
+            const socket = io();
+
+            // 🟢 Escuchar evento de timbre físico
+            socket.on("alert_request", (data) => {
+                // 🔊 Reproducir sonido
+                const audio = document.getElementById("doorbell");
+                audio.currentTime = 0;
+                audio
+                    .play()
+                    .catch((err) =>
+                        console.warn("No se pudo reproducir sonido:", err),
+                    );
+
+                const alertDiv = document.createElement("div");
+                alertDiv.textContent = data.message || "🚨 Alerta";
+                alertDiv.style.position = "fixed";
+                alertDiv.style.top = "20px";
+                alertDiv.style.right = "20px";
+                alertDiv.style.background = "#ff9800";
+                alertDiv.style.color = "#000";
+                alertDiv.style.padding = "12px 18px";
+                alertDiv.style.borderRadius = "8px";
+                alertDiv.style.fontWeight = "bold";
+                alertDiv.style.zIndex = "9999";
+                document.body.appendChild(alertDiv);
+                setTimeout(() => alertDiv.remove(), 6000);
+            });
+
+            // 🔒 Escuchar estado de puerta
+            socket.on("door_status", (data) => {
+                const doorStatus = document
+                    .getElementById("doorStatus")
+                    .querySelector("p");
+                if (data.status === "open") {
+                    doorStatus.textContent = "🔓 ABIERTA";
+                    doorStatus.style.color = "#4caf50";
+                } else {
+                    doorStatus.textContent = "🔒 CERRADA";
+                    doorStatus.style.color = "#00bcd4";
+                }
+            });
+
+            // Inicializar audio una vez el usuario interactúe (para evitar bloqueo de autoplay)
+            let audioReady = false;
+            document.body.addEventListener("click", () => {
+                if (!audioReady) {
+                    const audio = document.getElementById("doorbell");
+                    audio
+                        .play()
+                        .then(() => {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            console.log(
+                                "🔈 Audio listo para reproducir en eventos futuros",
+                            );
+                        })
+                        .catch((err) => {
+                            console.warn(
+                                "⚠️ El navegador bloqueó el audio:",
+                                err,
+                            );
+                        });
+                    audioReady = true;
+                }
+            });
+
+            // Cuando llegue el evento de timbre desde el servidor
+            function playDoorbell() {
+                const audio = document.getElementById("doorbell");
+                audio.currentTime = 0;
+                audio
+                    .play()
+                    .catch((err) =>
+                        console.warn("Error al reproducir doorbell:", err),
+                    );
+            }
         </script>
     </body>
 </html>

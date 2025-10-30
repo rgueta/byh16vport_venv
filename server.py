@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
 # version 6: video + cerradura + config externa + alerta botón físico
 
-from flask import Flask, Response, render_template, request, jsonify, abort
+from flask import (
+    Flask,
+    Response,
+    render_template,
+    request,
+    jsonify,
+    redirect,
+    url_for,
+    session,
+    stream_with_context,
+)
 from flask_socketio import SocketIO, emit
 from picamera2 import Picamera2
 import io, threading, time, logging, json, sys
+import queue, nfcModule
 
 # ------------------------------------------------------------------
 # 🔧 Configuración
@@ -38,6 +49,10 @@ def load_config(path="config.json"):
 
 
 config = load_config()
+
+ADMIN_USER = config.get("admin", {}).get("username", "admin")
+ADMIN_PASS = config.get("admin", {}).get("password", "1234")
+
 
 # ------------------------------------------------------------------
 # 🧱 Logging
@@ -94,6 +109,7 @@ threading.Thread(target=capture_frames, daemon=True).start()
 # ------------------------------------------------------------------
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
+app.secret_key = "supersecretkey"  # cambia esta cadena
 
 
 def generate_stream():
@@ -111,16 +127,87 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/schema1")
-def schema1():
-    return render_template("index1.html")
-
-
 @app.route("/video_feed")
 def video_feed():
     return Response(
         generate_stream(), mimetype="multipart/x-mixed-replace; boundary=frame"
     )
+
+
+# ===========================================================
+# 🧭 RUTAS PARA ADMINISTRACIÓN DE TARJETAS NFC
+# ===========================================================
+
+from functools import wraps
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login_page"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+@app.route("/admin")
+# @login_required
+def admin_page():
+    return render_template("admin.html")
+
+
+@app.route("/api/cards", methods=["GET"])
+# @login_required
+def api_list_cards():
+    cards = nfcModule.list_cards()
+    keys = ["uid", "name", "level", "enabled", "timestamp"]
+    return jsonify([dict(zip(keys, c)) for c in cards])
+
+
+@app.route("/api/cards", methods=["POST"])
+def api_add_card():
+    data = request.get_json()
+    uid = data.get("uid")
+    name = data.get("name", "")
+    level = data.get("level", "user")
+    if not uid:
+        return jsonify({"error": "UID requerido"}), 400
+    nfcModule.add_card(uid, name, level)
+    return jsonify({"message": "Tarjeta agregada"})
+
+
+@app.route("/api/cards/<uid>", methods=["PUT"])
+def api_update_card(uid):
+    data = request.get_json()
+    nfcModule.update_card(
+        uid, name=data.get("name"), level=data.get("level"), enabled=data.get("enabled")
+    )
+    return jsonify({"message": "Tarjeta actualizada"})
+
+
+@app.route("/api/cards/<uid>", methods=["DELETE"])
+def api_delete_card(uid):
+    nfcModule.remove_card(uid)
+    return jsonify({"message": "Tarjeta eliminada"})
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login_page():
+    if request.method == "POST":
+        user = request.form.get("username")
+        pw = request.form.get("password")
+        if user == ADMIN_USER and pw == ADMIN_PASS:
+            session["logged_in"] = True
+            return redirect(url_for("admin_page"))
+        return render_template("login.html", error="Usuario o contraseña incorrectos")
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login_page"))
 
 
 # ------------------------------------------------------------------
@@ -230,6 +317,42 @@ def buzz(duration=0.3):
     GPIO.output(BUZ_GPIO_PIN, GPIO.LOW)
 
 
+# ------------------------------------------------------------------
+# 📢 EVENTOS EN TIEMPO REAL (SSE)
+# ------------------------------------------------------------------
+event_queue = queue.Queue()
+
+
+@app.route("/events")
+def events():
+    def event_stream():
+        while True:
+            event = event_queue.get()
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return Response(stream_with_context(event_stream()), mimetype="text/event-stream")
+
+
+def broadcast_event(event_type, data):
+    """Encola un evento JSON para enviar al navegador"""
+    event_queue.put({"type": event_type, **data})
+
+
+# ------------------------------------------------------------------
+# 🎫 CALLBACK PARA TARJETAS NFC
+# ------------------------------------------------------------------
+def on_card_detected(uid):
+    allowed = nfcModule.is_card_allowed(uid)
+    logger.info(f"🎫 Tarjeta detectada UID={uid}, permitido={allowed}")
+
+    broadcast_event("nfc_access", {"uid": uid, "allowed": allowed})
+
+    if allowed:
+        threading.Thread(target=activate_lock, daemon=True).start()
+    else:
+        logger.warning(f"🚫 Acceso denegado para UID={uid}")
+
+
 threading.Thread(target=listen_button, daemon=True).start()
 
 # ------------------------------------------------------------------
@@ -237,6 +360,13 @@ threading.Thread(target=listen_button, daemon=True).start()
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     try:
+        # Iniciar lector NFC en segundo plano
+        nfcModule.init_db()
+        threading.Thread(
+            target=nfcModule.start_reader, args=(on_card_detected,), daemon=True
+        ).start()
+        logger.info("📡 Lector NFC (RDM6300) iniciado en hilo de fondo")
+
         socketio.run(
             app,
             host=config["server"]["host"],
