@@ -1,4 +1,8 @@
 {
+    "admin": {
+        "username": "admin",
+        "password": "1234"
+    },
     "camera": {
         "resolution": [640, 480],
         "format": "XBGR8888",

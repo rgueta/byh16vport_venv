@@ -325,27 +325,6 @@
                 }
             }
 
-            // Hook buttons
-            // document
-            //     .getElementById("openBtn")
-            //     .addEventListener("click", async () => {
-            //         const resp = await postAction("open");
-            //         if (resp.ok) alert("Se ha enviado la orden de abrir.");
-            //         else
-            //             alert(
-            //                 "Error enviando orden: " +
-            //                     (resp.err && resp.err.message),
-            //             );
-            //     });
-
-            // document
-            //     .getElementById("unlockBtn")
-            //     .addEventListener("click", async () => {
-            //         const resp = await postAction("unlock");
-            //         if (resp.ok) alert("Desbloqueo remoto enviado.");
-            //         else alert("Error enviando desbloqueo.");
-            //     });
-
             document
                 .getElementById("snapshotBtn")
                 .addEventListener("click", async () => {
@@ -410,6 +389,55 @@
                 img.src = url;
                 thumb.appendChild(img);
                 thumbText.style.display = "none";
+            }
+
+            // --- 🔔 Eventos del servidor (SSE) ------------------------
+            const evtSource = new EventSource("/events");
+
+            evtSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("Evento recibido:", data);
+
+                if (data.type === "nfc_access") {
+                    const msg = data.allowed
+                        ? `✅ Tarjeta ${data.uid} autorizada — puerta abierta`
+                        : `🚫 Tarjeta ${data.uid} no autorizada`;
+                    showNotification(msg, data.allowed ? "success" : "error");
+                    if (data.allowed) {
+                        const audio = new Audio("/static/sounds/open.mp3");
+                        audio.play();
+                    } else {
+                        const audio = new Audio("/static/sounds/canary.mp3");
+                        audio.play();
+                    }
+                }
+            };
+
+            // Simple helper para mostrar notificaciones
+            function showNotification(msg, type = "info") {
+                const el = document.createElement("div");
+                el.textContent = msg;
+                el.className = `notif ${type}`;
+                Object.assign(el.style, {
+                    position: "fixed",
+                    bottom: "10px",
+                    right: "10px",
+                    background:
+                        type === "error"
+                            ? "#f44336"
+                            : type === "success"
+                              ? "#4caf50"
+                              : "#333",
+                    color: "#fff",
+                    padding: "10px 15px",
+                    borderRadius: "8px",
+                    zIndex: 9999,
+                    fontSize: "0.9rem",
+                    transition: "opacity 0.5s",
+                    opacity: 0.95,
+                });
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 4000);
             }
         </script>
 

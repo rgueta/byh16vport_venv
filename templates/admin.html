@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Administración de Tarjetas NFC</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: #121212;
+                color: #fff;
+                margin: 0;
+                padding: 0;
+            }
+            h1 {
+                background: #2196f3;
+                margin: 0;
+                padding: 15px;
+                text-align: center;
+            }
+            table {
+                width: 95%;
+                margin: 20px auto;
+                border-collapse: collapse;
+            }
+            table,
+            th,
+            td {
+                border: 1px solid #444;
+            }
+            th,
+            td {
+                padding: 10px;
+                text-align: center;
+            }
+            tr:nth-child(even) {
+                background: #1e1e1e;
+            }
+            button {
+                background: #2196f3;
+                color: white;
+                border: none;
+                padding: 6px 10px;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+            button:hover {
+                background: #42a5f5;
+            }
+            input,
+            select {
+                padding: 5px;
+                border-radius: 4px;
+                border: none;
+                outline: none;
+            }
+            #formCard {
+                display: flex;
+                justify-content: center;
+                gap: 8px;
+                margin: 15px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Administración de Tarjetas NFC</h1>
+
+        <div id="formCard">
+            <input id="uid" placeholder="UID" />
+            <input id="name" placeholder="Nombre" />
+            <select id="level">
+                <option value="user">Usuario</option>
+                <option value="admin">Administrador</option>
+            </select>
+            <button onclick="addCard()">Agregar</button>
+        </div>
+
+        <table id="cardsTable">
+            <thead>
+                <tr>
+                    <th>UID</th>
+                    <th>Nombre</th>
+                    <th>Nivel</th>
+                    <th>Activo</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <script>
+            async function loadCards() {
+                const res = await fetch("/api/cards");
+                const data = await res.json();
+                const tbody = document.querySelector("#cardsTable tbody");
+                tbody.innerHTML = "";
+                data.forEach((card) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+      <td>${card.uid}</td>
+      <td>${card.name || "-"}</td>
+      <td>${card.level}</td>
+      <td>${card.enabled ? "✅" : "🚫"}</td>
+      <td>${card.timestamp}</td>
+      <td>
+        <button onclick="toggleCard('${card.uid}', ${card.enabled ? 0 : 1})">
+          ${card.enabled ? "Desactivar" : "Activar"}
+        </button>
+        <button onclick="deleteCard('${card.uid}')">Eliminar</button>
+      </td>
+    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            async function addCard() {
+                const uid = document.getElementById("uid").value.trim();
+                const name = document.getElementById("name").value.trim();
+                const level = document.getElementById("level").value;
+                if (!uid) return alert("Falta UID");
+
+                await fetch("/api/cards", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ uid, name, level }),
+                });
+                loadCards();
+            }
+
+            async function toggleCard(uid, enabled) {
+                await fetch(`/api/cards/${uid}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ enabled }),
+                });
+                loadCards();
+            }
+
+            async function deleteCard(uid) {
+                if (!confirm("¿Eliminar tarjeta?")) return;
+                await fetch(`/api/cards/${uid}`, { method: "DELETE" });
+                loadCards();
+            }
+
+            loadCards();
+        </script>
+    </body>
+</html>

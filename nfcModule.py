@@ -1,17 +1,19 @@
-#!/usr/bin/env python3
-import sqlite3
-import threading
+import serial
 import time
 import logging
-import serial
-import binascii
+import sqlite3
 
-DB_PATH = "/home/pi/vport/nfc_cards.db"
+DB_PATH = "/home/bytheg/vport/nfc_cards.db"
+SERIAL_PORT = "/dev/serial0"
+BAUDRATE = 9600
+
+# --- Control de rebote NFC ---
+last_uid = None
+last_time = 0
+DEBOUNCE_TIME = 3  # segundos
 
 
-# ---------------------------------------------------------------------
-# 🗃️ Inicialización de la base de datos
-# ---------------------------------------------------------------------
+# --- Inicialización de DB ---
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -28,59 +30,7 @@ def init_db():
     conn.close()
 
 
-# ---------------------------------------------------------------------
-# ✏️ Funciones CRUD
-# ---------------------------------------------------------------------
-def add_card(uid, name="", level="user"):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        "INSERT OR REPLACE INTO cards (uid, name, level, enabled) VALUES (?, ?, ?, 1)",
-        (uid, name, level),
-    )
-    conn.commit()
-    conn.close()
-    logging.info(f"🆕 Tarjeta agregada: {uid} ({name})")
-
-
-def remove_card(uid):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM cards WHERE uid = ?", (uid,))
-    conn.commit()
-    conn.close()
-    logging.info(f"❌ Tarjeta eliminada: {uid}")
-
-
-def update_card(uid, name=None, level=None, enabled=None):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    fields, values = [], []
-    if name:
-        fields.append("name = ?")
-        values.append(name)
-    if level:
-        fields.append("level = ?")
-        values.append(level)
-    if enabled is not None:
-        fields.append("enabled = ?")
-        values.append(int(enabled))
-    values.append(uid)
-    c.execute(f"UPDATE cards SET {', '.join(fields)} WHERE uid = ?", values)
-    conn.commit()
-    conn.close()
-    logging.info(f"✏️ Tarjeta actualizada: {uid}")
-
-
-def list_cards():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM cards")
-    cards = c.fetchall()
-    conn.close()
-    return cards
-
-
+# --- CRUD simplificado (sin cambios) ---
 def is_card_allowed(uid):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -90,53 +40,32 @@ def is_card_allowed(uid):
     return result is not None and result[0] == 1
 
 
-# ---------------------------------------------------------------------
-# 🔍 Lector NFC vía UART (GPIO14 TX / GPIO15 RX)
-# ---------------------------------------------------------------------
-# Requiere que habilites UART en Raspberry Pi:
-#   sudo raspi-config → Interface Options → Serial Port → disable login shell → enable hardware serial
-
-UART_PORT = "/dev/serial0"  # o "/dev/ttyAMA0"
-UART_BAUD = 115200  # puede variar: PN532=115200, MFRC522=9600
-
-
+# --- Lector RDM6300 ---
 def start_reader(callback):
-    """Inicia el lector NFC conectado por UART"""
-    logging.info("📡 Iniciando lector NFC por UART...")
+    global last_uid, last_time
     try:
-        ser = serial.Serial(UART_PORT, UART_BAUD, timeout=0.1)
-    except serial.SerialException as e:
-        logging.error(f"❌ Error al abrir puerto serial {UART_PORT}: {e}")
-        return
+        ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=0.5)
+        logging.info(f"📡 Lector RDM6300 activo en {SERIAL_PORT}")
+        buffer = ""
+        while True:
+            data = ser.read().decode(errors="ignore")
+            if data == "\x02":  # inicio
+                buffer = ""
+            elif data == "\x03":  # fin
+                if len(buffer) >= 10:
+                    uid = buffer[:10]
+                    now = time.time()
 
-    while True:
-        try:
-            data = ser.read(16)
-            if data:
-                uid = binascii.hexlify(data).decode().upper()
-                # Si el lector entrega datos con encabezados o ruido,
-                # podrías filtrar el UID real aquí.
-                logging.info(f"🎫 Tarjeta detectada UID={uid}")
-                callback(uid)
-            time.sleep(0.2)
-        except Exception as e:
-            logging.error(f"⚠️ Error en lectura NFC: {e}")
-            time.sleep(1)
-
-
-# ---------------------------------------------------------------------
-# 🧠 Ejemplo de uso (solo para prueba directa)
-# ---------------------------------------------------------------------
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-    )
-    init_db()
-
-    def test_callback(uid):
-        if is_card_allowed(uid):
-            logging.info(f"✅ Acceso permitido: {uid}")
-        else:
-            logging.warning(f"🚫 Acceso denegado: {uid}")
-
-    start_reader(test_callback)
+                    # --- Anti-rebote ---
+                    if uid != last_uid or (now - last_time) > DEBOUNCE_TIME:
+                        last_uid = uid
+                        last_time = now
+                        logging.info(f"🎫 Tarjeta detectada UID={uid}")
+                        callback(uid)
+                    else:
+                        logging.debug(f"↩️ Lectura ignorada (duplicada): {uid}")
+            else:
+                buffer += data
+    except Exception as e:
+        logging.error(f"⚠️ Error en lectura RDM6300: {e}")
+        time.sleep(1)
