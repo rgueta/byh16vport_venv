@@ -127,11 +127,6 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/schema1")
-def schema1():
-    return render_template("index1.html")
-
-
 @app.route("/video_feed")
 def video_feed():
     return Response(
