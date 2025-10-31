@@ -56,3 +56,28 @@ select {
     gap: 8px;
     margin: 15px;
 }
+/*--------   version para eventos NFC -------*/
+.card {
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 10px;
+    display: inline-block;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+.ok {
+    color: #4caf50;
+}
+.denied {
+    color: #f44336;
+}
+#history {
+    margin-top: 20px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+}
+.item {
+    border-bottom: 1px solid #333;
+    padding: 5px;
+}

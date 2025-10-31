@@ -17,6 +17,7 @@ from picamera2 import Picamera2
 import io, threading, time, logging, json, sys
 import queue, nfcModule
 
+
 # ------------------------------------------------------------------
 # 🔧 Configuración
 # ------------------------------------------------------------------
@@ -49,6 +50,7 @@ def load_config(path="config.json"):
 
 
 config = load_config()
+last_card = {"uid": None, "name": None, "allowed": False, "timestamp": None}
 
 ADMIN_USER = config.get("admin", {}).get("username", "admin")
 ADMIN_PASS = config.get("admin", {}).get("password", "1234")
@@ -154,7 +156,20 @@ def login_required(f):
 @app.route("/admin")
 # @login_required
 def admin_page():
-    return render_template("admin.html")
+    # return render_template("admin.html")
+    #  return render_template("admin.html", cards=cards, nfcModule=nfcModule)
+    return render_template("admin.html", nfcModule=nfcModule)
+
+
+@app.route("/admin/learn/<state>", methods=["POST"])
+def admin_learn(state):
+    if state == "on":
+        nfcModule.learn_mode = True
+        logging.info("🧠 Modo aprendizaje ACTIVADO")
+    else:
+        nfcModule.learn_mode = False
+        logging.info("🧠 Modo aprendizaje DESACTIVADO")
+    return redirect(url_for("admin"))
 
 
 @app.route("/api/cards", methods=["GET"])
@@ -343,7 +358,24 @@ def broadcast_event(event_type, data):
 # ------------------------------------------------------------------
 def on_card_detected(uid):
     allowed = nfcModule.is_card_allowed(uid)
-    logger.info(f"🎫 Tarjeta detectada UID={uid}, permitido={allowed}")
+    conn = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT name FROM cards WHERE uid=?", (uid,))
+    row = c.fetchone()
+    name = row[0] if row else "Desconocido"
+    conn.close()
+
+    last_card = {
+        "uid": uid,
+        "name": name,
+        "allowed": allowed,
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+    logger.info(
+        f"🎫 Tarjeta UID={uid}, permitido={allowed} | {'✅ Autorizada' if allowed else '❌ Denegada'} | {name}"
+    )
+    # logger.info(f"🎫 Tarjeta detectada UID={uid}, permitido={allowed}")
 
     broadcast_event("nfc_access", {"uid": uid, "allowed": allowed})
 
@@ -361,7 +393,7 @@ threading.Thread(target=listen_button, daemon=True).start()
 # ==========================
 @app.route("/admin")
 def admin():
-    cards = nfc_module.list_cards()
+    cards = nfcModule.list_cards()
     return render_template("admin.html", cards=cards)
 
 
@@ -370,7 +402,7 @@ def admin_add():
     uid = request.form["uid"].strip().upper()
     name = request.form["name"].strip()
     level = request.form["level"]
-    nfc_module.add_card(uid, name, level)
+    nfcModule.add_card(uid, name, level)
     return redirect(url_for("admin"))
 
 
@@ -379,13 +411,13 @@ def admin_update(uid):
     name = request.form.get("name", "")
     level = request.form.get("level", "user")
     enabled = int(request.form.get("enabled", 1))
-    nfc_module.update_card(uid, name, level, enabled)
+    nfcModule.update_card(uid, name, level, enabled)
     return redirect(url_for("admin"))
 
 
 @app.route("/admin/delete/<uid>", methods=["POST"])
 def admin_delete(uid):
-    nfc_module.remove_card(uid)
+    nfcModule.remove_card(uid)
     return redirect(url_for("admin"))
 
 
@@ -396,6 +428,7 @@ if __name__ == "__main__":
     try:
         # Iniciar lector NFC en segundo plano
         nfcModule.init_db()
+        nfcModule.start_reader(on_card_detected)
         threading.Thread(
             target=nfcModule.start_reader, args=(on_card_detected,), daemon=True
         ).start()
@@ -413,4 +446,5 @@ if __name__ == "__main__":
         picam2.stop()
         if GPIO:
             GPIO.cleanup()
+        nfcModule.reader_running = False
         logger.info("🧹 Servidor detenido correctamente")

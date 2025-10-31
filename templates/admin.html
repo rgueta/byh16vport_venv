@@ -5,7 +5,7 @@
 <title>Panel NFC</title>
 <link
     rel="stylesheet"
-    href="{{ url_for('static', filename='css/pages/index.css') }}"
+    href="{{ url_for('static', filename='css/pages/admin.css') }}"
 />
 <!--<style>
 body { font-family: sans-serif; margin: 2em; background: #f5f5f5; }
@@ -20,6 +20,27 @@ input, select { padding: 4px; }
 </head>
 <body>
 <h1>🔐 Administración de Tarjetas NFC</h1>
+<h2>🧠 Modo Aprendizaje NFC</h2>
+<form action="/admin/learn/{{ 'off' if nfcModule.learn_mode else 'on' }}" method="POST">
+  {% if nfcModule.learn_mode %}
+  <button style="background:#a00;">Desactivar aprendizaje</button>
+  {% else %}
+  <button style="background:#0a0;">Activar aprendizaje</button>
+  {% endif %}
+</form>
+
+<div class="card">
+        <h2>Última tarjeta</h2>
+        <p><b>UID:</b> <span id="uid">—</span></p>
+        <p><b>Nombre:</b> <span id="name">—</span></p>
+        <p><b>Estado:</b> <span id="status">—</span></p>
+        <p><b>Hora:</b> <span id="time">—</span></p>
+    </div>
+
+    <div id="history">
+        <h3>Historial</h3>
+        <div id="log"></div>
+    </div>
 
 <h2>Agregar tarjeta manualmente</h2>
 <form action="/admin/add" method="POST">
@@ -67,6 +88,35 @@ input, select { padding: 4px; }
 </table>
 
 <p><a href="/">⬅️ Volver al videoportero</a></p>
+<script>
+    const evtSource = new EventSource("/events");
+    const uidEl = document.getElementById("uid");
+    const nameEl = document.getElementById("name");
+    const statusEl = document.getElementById("status");
+    const timeEl = document.getElementById("time");
+    const log = document.getElementById("log");
+
+    evtSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        uidEl.textContent = data.uid;
+        nameEl.textContent = data.name;
+        timeEl.textContent = data.timestamp;
+
+        if (data.allowed) {
+            statusEl.textContent = "✅ Autorizada";
+            statusEl.className = "ok";
+        } else {
+            statusEl.textContent = "❌ Denegada";
+            statusEl.className = "denied";
+        }
+
+        // Agregar al historial
+        const entry = document.createElement("div");
+        entry.className = "item";
+        entry.innerHTML = `<b>${data.timestamp}</b> - ${data.uid} (${data.name}) - ${data.allowed ? '✅' : '❌'}`;
+        log.prepend(entry);
+    };
+</script>
 </body>
 </html>
 

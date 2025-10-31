@@ -3,15 +3,25 @@ import sqlite3
 import threading
 import time
 import logging
+import os
+from buzzer import BuzzerManager
 
+# --- Configuración general ---
 DB_PATH = "/home/bytheg/vport/nfc_cards.db"
-SERIAL_PORT = "/dev/serial0"  # UART principal del Pi (GPIO14/15)
-BAUDRATE = 9600
+PORT = "/dev/serial0"
+BAUD = 9600
 READ_INTERVAL = 0.1  # segundos entre lecturas
-DEBOUNCE_TIME = 2.0  # no repetir la misma tarjeta antes de 2s
+DEBOUNCE_TIME = 2.0  # tiempo mínimo entre lecturas del mismo UID
+learn_mode = False  # modo aprendizaje activable desde el panel
+reader_running = True
+
+_last_uid = None
+_last_time = 0
+
+buzzer = BuzzerManager()
 
 
-# --- Inicialización base de datos ---
+# --- Inicialización DB ---
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -28,52 +38,42 @@ def init_db():
     conn.close()
 
 
-# --- CRUD ---
-def add_card(uid, name="", level="user"):
+# --- CRUD básico ---
+def add_card(uid, name="Nueva tarjeta", level="user", enabled=1):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(
-        "INSERT OR REPLACE INTO cards (uid, name, level, enabled) VALUES (?, ?, ?, 1)",
-        (uid, name, level),
+        "INSERT OR REPLACE INTO cards (uid, name, level, enabled) VALUES (?, ?, ?, ?)",
+        (uid, name, level, enabled),
     )
     conn.commit()
     conn.close()
-    logging.info(f"🆕 Tarjeta agregada: {uid} ({name})")
+    logging.info(f"🆕 Tarjeta agregada: {uid}")
+
+
+def update_card(uid, name, level, enabled):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        "UPDATE cards SET name=?, level=?, enabled=? WHERE uid=?",
+        (name, level, enabled, uid),
+    )
+    conn.commit()
+    conn.close()
 
 
 def remove_card(uid):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("DELETE FROM cards WHERE uid = ?", (uid,))
+    c.execute("DELETE FROM cards WHERE uid=?", (uid,))
     conn.commit()
     conn.close()
-    logging.info(f"❌ Tarjeta eliminada: {uid}")
-
-
-def update_card(uid, name=None, level=None, enabled=None):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    fields, values = [], []
-    if name:
-        fields.append("name = ?")
-        values.append(name)
-    if level:
-        fields.append("level = ?")
-        values.append(level)
-    if enabled is not None:
-        fields.append("enabled = ?")
-        values.append(int(enabled))
-    values.append(uid)
-    c.execute(f"UPDATE cards SET {', '.join(fields)} WHERE uid = ?", values)
-    conn.commit()
-    conn.close()
-    logging.info(f"✏️ Tarjeta actualizada: {uid}")
 
 
 def list_cards():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT * FROM cards")
+    c.execute("SELECT uid, name, level, enabled, timestamp FROM cards")
     cards = c.fetchall()
     conn.close()
     return cards
@@ -82,48 +82,63 @@ def list_cards():
 def is_card_allowed(uid):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT enabled FROM cards WHERE uid = ?", (uid,))
-    result = c.fetchone()
+    c.execute("SELECT enabled FROM cards WHERE uid=?", (uid,))
+    row = c.fetchone()
     conn.close()
-    return result is not None and result[0] == 1
+    return row is not None and row[0] == 1
 
 
-# --- Lector UART RDM6300 ---
-def read_uid_from_serial(ser):
-    """Lee 14 bytes del lector RDM6300 y devuelve el UID hexadecimal."""
-    data = ser.read(14)  # RDM6300 siempre manda 14 bytes por lectura
-    if len(data) == 14 and data[0] == 0x02 and data[-1] == 0x03:
-        uid_hex = data[1:11].decode("ascii")  # bytes 1-10 son el UID ASCII HEX
-        return uid_hex
-    return None
-
-
+# --- Lectura UART (RDM6300) ---
 def start_reader(callback):
-    """Inicia lectura continua desde el lector RDM6300 UART"""
-    init_db()
-    last_uid = None
-    last_time = 0
-
-    try:
-        ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=0.2)
-        logging.info(
-            f"📡 Lector RDM6300 inicializado en {SERIAL_PORT} @ {BAUDRATE} bps"
-        )
-    except Exception as e:
-        logging.error(f"🚫 No se pudo abrir el puerto serial: {e}")
-        return
-
-    while True:
+    def reader():
+        global _last_uid, _last_time
+        logging.info(f"📡 Lector NFC UART iniciado en {PORT}")
         try:
-            uid = read_uid_from_serial(ser)
-            if uid:
-                now = time.time()
-                if uid != last_uid or (now - last_time) > DEBOUNCE_TIME:
-                    last_uid = uid
-                    last_time = now
-                    logging.info(f"🎫 Tarjeta detectada UID={uid}")
-                    callback(uid)
-            time.sleep(READ_INTERVAL)
+            with serial.Serial(PORT, BAUD, timeout=0.2) as ser:
+                buffer = b""
+                while reader_running:
+                    if ser.in_waiting:
+                        byte = ser.read()
+                        if byte == b"\x02":  # inicio del frame
+                            buffer = b""
+                        buffer += byte
+                        if byte == b"\x03":  # fin del frame
+                            if len(buffer) >= 14:
+                                try:
+                                    uid = buffer[3:11].decode("ascii").strip().upper()
+                                    now = time.time()
+                                    if (
+                                        uid != _last_uid
+                                        or (now - _last_time) > DEBOUNCE_TIME
+                                    ):
+                                        _last_uid = uid
+                                        _last_time = now
+                                        handle_uid(uid, callback)
+                                    else:
+                                        logging.debug(
+                                            f"⏳ UID repetido ignorado: {uid}"
+                                        )
+                                except Exception as e:
+                                    logging.warning(f"Error decodificando UID: {e}")
+                            buffer = b""
+                    time.sleep(READ_INTERVAL)
         except Exception as e:
-            logging.error(f"⚠️ Error en lectura RDM6300: {e}")
-            time.sleep(1)
+            logging.error(f"❌ Error en lector NFC: {e}")
+
+    threading.Thread(target=reader, daemon=True).start()
+
+
+def handle_uid(uid, callback):
+    global learn_mode
+    if not uid:
+        return
+    # 🔊 Sonido al abrir puerta
+    buzzer.alert_pattern("success")
+    logging.info(f"🎫 UID detectado: {uid}")
+    if is_card_allowed(uid):
+        callback(uid)
+    else:
+        if learn_mode:
+            add_card(uid, f"Nueva tarjeta ({uid})", "user", 1)
+            logging.info(f"🧠 Modo aprendizaje: tarjeta {uid} agregada automáticamente")
+        callback(uid)
