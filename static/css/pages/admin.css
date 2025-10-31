@@ -29,6 +29,9 @@ td {
 tr:nth-child(even) {
     background: #1e1e1e;
 }
+form {
+    display: inline;
+}
 button {
     background: #2196f3;
     color: white;

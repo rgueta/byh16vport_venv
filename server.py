@@ -355,6 +355,40 @@ def on_card_detected(uid):
 
 threading.Thread(target=listen_button, daemon=True).start()
 
+
+# ==========================
+# PANEL DE ADMINISTRACIÓN NFC
+# ==========================
+@app.route("/admin")
+def admin():
+    cards = nfc_module.list_cards()
+    return render_template("admin.html", cards=cards)
+
+
+@app.route("/admin/add", methods=["POST"])
+def admin_add():
+    uid = request.form["uid"].strip().upper()
+    name = request.form["name"].strip()
+    level = request.form["level"]
+    nfc_module.add_card(uid, name, level)
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/update/<uid>", methods=["POST"])
+def admin_update(uid):
+    name = request.form.get("name", "")
+    level = request.form.get("level", "user")
+    enabled = int(request.form.get("enabled", 1))
+    nfc_module.update_card(uid, name, level, enabled)
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/delete/<uid>", methods=["POST"])
+def admin_delete(uid):
+    nfc_module.remove_card(uid)
+    return redirect(url_for("admin"))
+
+
 # ------------------------------------------------------------------
 # 🏁 Main
 # ------------------------------------------------------------------
