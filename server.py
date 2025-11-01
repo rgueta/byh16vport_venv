@@ -348,41 +348,54 @@ def events():
     return Response(stream_with_context(event_stream()), mimetype="text/event-stream")
 
 
-def broadcast_event(event_type, data):
-    """Encola un evento JSON para enviar al navegador"""
-    event_queue.put({"type": event_type, **data})
+def broadcast_event(event, data):
+    """Envía eventos NFC al panel /admin usando SocketIO"""
+    try:
+        socketio.emit(event, data)
+        logger.info(f"📡 Evento enviado a cliente: {event} -> {data}")
+    except Exception as e:
+        logger.error(f"Error en broadcast_event: {e}")
 
 
-# ------------------------------------------------------------------
+# --------------------------------------------
 # 🎫 CALLBACK PARA TARJETAS NFC
 # ------------------------------------------------------------------
+
+
 def on_card_detected(uid):
-    allowed = nfcModule.is_card_allowed(uid)
-    conn = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT name FROM cards WHERE uid=?", (uid,))
-    row = c.fetchone()
-    name = row[0] if row else "Desconocido"
-    conn.close()
+    try:
+        conn = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT name, enabled FROM cards WHERE uid=?", (uid,))
+        row = c.fetchone()
+        conn.close()
 
-    last_card = {
-        "uid": uid,
-        "name": name,
-        "allowed": allowed,
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-    }
+        if row:
+            name, allowed = row
+        else:
+            name = "Desconocido"
+            allowed = 0
 
-    logger.info(
-        f"🎫 Tarjeta UID={uid}, permitido={allowed} | {'✅ Autorizada' if allowed else '❌ Denegada'} | {name}"
-    )
-    # logger.info(f"🎫 Tarjeta detectada UID={uid}, permitido={allowed}")
+        last_card = {
+            "uid": uid,
+            "name": name,
+            "allowed": bool(allowed),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        }
 
-    broadcast_event("nfc_access", {"uid": uid, "allowed": allowed})
+        logging.info(
+            f"🎫 Tarjeta UID={uid} | {'✅ Autorizada' if allowed else '❌ Denegada'} | {name}"
+        )
 
-    if allowed:
-        threading.Thread(target=activate_lock, daemon=True).start()
-    else:
-        logger.warning(f"🚫 Acceso denegado para UID={uid}")
+        broadcast_event("nfc_access", last_card)
+
+        if allowed:
+            threading.Thread(target=activate_lock, daemon=True).start()
+        else:
+            logging.warning(f"🚫 Acceso denegado para UID={uid}")
+
+    except Exception as e:
+        logging.error(f"⚠️ Error en on_card_detected: {e}")
 
 
 threading.Thread(target=listen_button, daemon=True).start()
@@ -428,11 +441,12 @@ if __name__ == "__main__":
     try:
         # Iniciar lector NFC en segundo plano
         nfcModule.init_db()
-        nfcModule.start_reader(on_card_detected)
         threading.Thread(
             target=nfcModule.start_reader, args=(on_card_detected,), daemon=True
         ).start()
-        logger.info("📡 Lector NFC (RDM6300) iniciado en hilo de fondo")
+        logger.info(
+            "📡 Lector NFC (RDM6300) iniciado        # nfcModule.start_reader(on_card_detected) en hilo de fondo"
+        )
 
         socketio.run(
             app,
