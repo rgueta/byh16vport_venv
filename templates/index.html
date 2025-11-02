@@ -38,15 +38,54 @@
 
                 <div class="status">
                     <div id="nfc-status" class="small">Status</div>
-                    <div class="small">
-                        FPS estimado: <span id="fps">—</span>
-                    </div>
                 </div>
 
-                <h1>Lista Colapsable con Datos JSON</h1>
+                <!-- Accordion Principal -->
+                <div class="main-accordion">
+                    <div
+                        class="accordion-header"
+                        onclick="toggleMainAccordion()"
+                    >
+                        <div class="accordion-title">
+                            📊 Tarjetas desconocidas
+                        </div>
+                        <div class="accordion-icon" id="mainAccordionIcon">
+                            ▼
+                        </div>
+                    </div>
+                    <div class="accordion-content" id="mainAccordionContent">
+                        <!-- Controles para agregar elementos -->
+                        <div class="counter" id="elementCounter">
+                            Total desconocidas:
+                            <span id="elementCount">0</span>
+                        </div>
 
-                <div class="accordion" id="accordion">
-                    <div class="loading" id="loading">Cargando datos...</div>
+                        <!-- Tabla de elementos -->
+                        <div class="table-container">
+                            <table class="elements-table">
+                                <thead>
+                                    <tr>
+                                        <th width="150">UID</th>
+                                        <th>Nombre</th>
+                                        <th width="180">Fecha</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="elementsTableBody">
+                                    <tr>
+                                        <td colspan="4">
+                                            <div
+                                                class="empty-state"
+                                                id="emptyState"
+                                            >
+                                                📝 No hay elementos en la
+                                                tabla.<br />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -174,16 +213,9 @@
                 });
             }
 
-            // Update UI
-            document.getElementById("apiBase").textContent = API_BASE;
-
             // Elements
-            const mjpeg = document.getElementById("mjpeg");
-            const hlsVideo = document.getElementById("videoStream");
             const connDot = document.getElementById("connDot");
             const connText = document.getElementById("connText");
-            const fpsLabel = document.getElementById("fps");
-            const thumb = document.getElementById("thumb");
 
             // Try to detect if MJPEG fails — then fallback to HLS/video
             let lastFrameTime = performance.now();
@@ -199,12 +231,6 @@
                     connText.textContent = "Desconectado";
                 }
             }
-
-            // Start FPS meter
-            fpsInterval = setInterval(() => {
-                fpsLabel.textContent = frames;
-                frames = 0;
-            }, 1000);
 
             // Capture image--------
             function capturar() {
@@ -226,7 +252,7 @@
 
             async function abrirPuerta() {
                 const btn = document.getElementById("unlockBtn");
-                const status = document.getElementById("status");
+                const status = document.getElementById("nfc-status");
                 const beep = document.getElementById("dooropen");
 
                 btn.disabled = true;
@@ -423,9 +449,6 @@
         <script>
             const socket = io();
 
-            //Accordion
-            // AccordionHeader();
-
             // 🟢 Escuchar evento de timbre físico
             socket.on("alert_request", (data) => {
                 // 🔊 Reproducir sonido
@@ -496,81 +519,85 @@
                 const color = data.allowed ? "green" : "red";
                 const cardInfo = `
                 <div style="padding:10px;margin-top:10px;border:2px solid ${color};border-radius:8px">
-                  <b>${status}</b><br>
-                  UID: ${data.uid}<br>
+                  <b>${status}  </b>
+                  UID: ${data.uid}   <br>
                   Nombre: ${data.name || "Desconocido"}
                 </div>`;
                 document.getElementById("nfc-status").innerHTML = cardInfo;
-                createAccordionItems(data);
+                if (!data.allowed) {
+                    addElement(data);
+                }
             });
 
             //  ================   Accordion para las lecturas  ======================
-            // Funcion para crear el encabezado del accordion
-            function AccordionHeader() {
-                const accordion = document.getElementById("accordion");
-                accordionItem.className = "accordion-item";
-                accordionItem.innerHTML = `
-                  <button class="accordion-header" onclick="toggleAccordion(this)">
-                      <span class="accordion-title">Tarjetas desconocidas</span>
-                      <span class="accordion-icon">▼</span>
-                  </button>`;
-                accordion.appendChild(accordionItem);
+            let isAccordionOpen = false;
+            let elementCount = 0;
+
+            // Función para alternar el accordion principal
+            function toggleMainAccordion() {
+                const content = document.getElementById("mainAccordionContent");
+                const icon = document.getElementById("mainAccordionIcon");
+
+                isAccordionOpen = !isAccordionOpen;
+                content.classList.toggle("open");
+                icon.classList.toggle("open");
             }
 
-            // Función para formatear el JSON con colores
-            function syntaxHighlight(json) {
-                try {
-                    // Convertir a string si es objeto
-                    if (typeof json !== "string") {
-                        json = JSON.stringify(json, null, 2);
-                    }
+            // Función para agregar nuevo elemento a la tabla
+            function addElement(item) {
+                // Incrementar contador
+                elementCount++;
 
-                    // Escapar caracteres HTML
-                    let escapedJson = json
-                        .replace(/&/g, "&amp;")
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;");
-
-                    // Aplicar colores de manera más simple
-                    return escapedJson
-                        .replace(
-                            /"([^"]+)":/g,
-                            '<span class="json-key">"$1"</span>:',
-                        )
-                        .replace(
-                            /: "([^"]+)"/g,
-                            ': <span class="json-string">"$1"</span>',
-                        )
-                        .replace(
-                            /: (true|false)/g,
-                            ': <span class="json-boolean">$1</span>',
-                        )
-                        .replace(
-                            /: (null)/g,
-                            ': <span class="json-null">$1</span>',
-                        )
-                        .replace(
-                            /: (\d+)/g,
-                            ': <span class="json-number">$1</span>',
-                        );
-                } catch (error) {
-                    console.error("Error en syntaxHighlight:", error);
-                    return '<span style="color: red">Error formateando JSON</span>';
+                // Asegurar que el accordion esté abierto
+                if (!isAccordionOpen) {
+                    toggleMainAccordion();
                 }
+
+                // Ocultar estado vacío si existe
+                const emptyState = document.getElementById("emptyState");
+                if (emptyState && emptyState.parentElement.parentElement) {
+                    emptyState.parentElement.parentElement.remove();
+                }
+
+                // Crear nueva fila en la tabla
+                const tableBody = document.getElementById("elementsTableBody");
+                const newRow = document.createElement("tr");
+                newRow.className = "fade-in";
+
+                const now = new Date();
+                const dateString =
+                    now.toLocaleDateString("es-ES", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                    }) +
+                    " " +
+                    now.toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    });
+
+                newRow.innerHTML = `
+                <td class="uid-cell">${item.uid}</td>
+                <td class="name-cell">${item.name}</td>
+                <td class="date-cell">${dateString}</td>
+            `;
+
+                // Agregar a la tabla
+                tableBody.appendChild(newRow);
+
+                // Actualizar contador
+                updateElementCounter();
             }
 
-            function createAccordionItems(data) {
-                const accordion = document.getElementById("accordion");
-                const accordionItem = document.createElement("div");
-
-                accordionItem.innerHTML = `
-                <div class="accordion-content">
-                    <div class="json-content">
-                        ${syntaxHighlight(data.name)}
-                    </div>
-                </div>;
-                `;
-                accordion.appendChild(accordionItem);
+            // Función para actualizar contador
+            function updateElementCounter() {
+                const countElement = document.getElementById("elementCount");
+                const rows = document.querySelectorAll("#elementsTableBody tr");
+                const validRows = Array.from(rows).filter(
+                    (row) => !row.querySelector(".empty-state"),
+                );
+                countElement.textContent = validRows.length;
             }
         </script>
     </body>

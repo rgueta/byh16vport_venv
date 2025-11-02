@@ -153,6 +153,11 @@ def login_required(f):
     return decorated_function
 
 
+@app.route("/accordion")
+def accordion():
+    return render_template("accordion.html")
+
+
 @app.route("/admin")
 # @login_required
 def admin_page():

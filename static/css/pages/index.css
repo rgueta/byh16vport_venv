@@ -243,46 +243,37 @@ img {
 }
 
 /*=====   accordion  =================*/
-.accordion {
+/* Accordion Principal */
+.main-accordion {
+    border: 1px solid #ddd;
     border-radius: 8px;
     overflow: hidden;
-}
-
-.accordion-item {
-    border: 1px solid #ddd;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    overflow: hidden;
-    background: white;
+    margin-bottom: 20px;
 }
 
 .accordion-header {
-    background-color: #f8f9fa;
-    padding: 15px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: background-color 0.3s ease;
-    border: none;
-    width: 100%;
-    text-align: left;
+    transition: background 0.3s ease;
 }
 
 .accordion-header:hover {
-    background-color: #e9ecef;
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
 .accordion-title {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: bold;
-    color: #333;
 }
 
 .accordion-icon {
-    font-size: 18px;
+    font-size: 20px;
     transition: transform 0.3s ease;
-    color: #666;
 }
 
 .accordion-icon.open {
@@ -296,64 +287,116 @@ img {
     transition:
         max-height 0.3s ease,
         padding 0.3s ease;
-    background-color: white;
+    background: white;
 }
 
 .accordion-content.open {
     padding: 20px;
-    max-height: 1000px;
+    max-height: 2000px;
 }
 
-.json-content {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 5px;
-    padding: 15px;
-    margin-top: 10px;
-    font-family: "Courier New", monospace;
-    font-size: 14px;
-    white-space: pre-wrap;
-    word-break: break-all;
-}
+/* Controles para agregar elementos */
 
-.json-key {
-    color: #d73a49;
+label {
+    display: block;
+    margin-bottom: 5px;
     font-weight: bold;
+    color: #333;
 }
 
-.json-string {
-    color: #032f62;
+/* Tabla de elementos */
+.table-container {
+    overflow-x: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
 }
 
-.json-number {
-    color: #005cc5;
+.elements-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
 }
 
-.json-boolean {
-    color: #6f42c1;
+.elements-table th {
+    background: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: bold;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
 }
 
-.json-null {
-    color: #6a737d;
+.elements-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: top;
 }
 
-.loading {
+.elements-table tr:last-child td {
+    border-bottom: none;
+}
+
+.elements-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.uid-cell {
+    font-family: "Courier New", monospace;
+    font-weight: bold;
+    color: #495057;
+}
+
+.name-cell {
+    color: #333;
+}
+
+.date-cell {
+    color: #6c757d;
+    font-size: 13px;
+}
+
+.actions-cell {
     text-align: center;
-    padding: 20px;
-    color: #666;
+    width: 120px;
 }
 
-.error {
-    text-align: center;
-    padding: 20px;
-    color: #dc3545;
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 5px;
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+    margin: 0 2px;
 }
 
 .empty-state {
     text-align: center;
     padding: 40px;
     color: #6c757d;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
 }
+
+.counter {
+    text-align: center;
+    margin: 15px 0;
+    color: #666;
+    font-size: 14px;
+    background: #e9ecef;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease;
