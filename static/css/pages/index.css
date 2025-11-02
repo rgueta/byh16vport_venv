@@ -32,7 +32,7 @@ body {
 .container {
     width: 100%;
     max-width: 1100px;
-    display: grid;
+    display: table-column;
     grid-template-columns: 1fr 160px;
     gap: var(--gap);
     align-items: start;
@@ -40,28 +40,17 @@ body {
 
 .header {
     text-align: center;
-    /*margin-bottom: 10px;*/
-    padding: 10px;
+    margin-bottom: 10px;
+    padding: 5px;
     background: #1e293b;
     border-radius: 10px;
 }
-.status-bar {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 15px;
-    margin-bottom: 10px;
-}
-.status-item {
-    background: #1e293b;
-    padding: 15px;
-    border-radius: 8px;
-    text-align: center;
-}
+
 /* Make single column on small screens */
 @media (max-width: 880px) {
     .container {
         grid-template-columns: 1fr;
-        padding-bottom: 18px;
+        padding-bottom: 8px;
     }
     .controls {
         order: 2;
@@ -79,18 +68,17 @@ body {
         rgba(255, 255, 255, 0.01)
     );
     border-radius: 18px;
+    margin-bottom: 10px;
     padding: 14px;
     box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
 }
 
-/* Video area comentada porque genera un zoom in */
-/* Utilizar esta parte solo para responsive*/
-/*Hay una tarea pendiente para esto */
-/*.video-card {
-    position: relative;
+.video-card {
+    /*position: relative;*/
     overflow: hidden;
     border-radius: 14px;
 }
+
 .video-inner {
     background: #000;
     display: flex;
@@ -100,7 +88,7 @@ body {
     aspect-ratio: 16/9;
     border-radius: 12px;
     overflow: hidden;
-}*/
+}
 
 img {
     width: 100%;
@@ -131,11 +119,17 @@ img {
     font-weight: 300;
 }
 .status {
-    font-size: 0.9rem;
+    padding: 10px 4px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+
+    /*font-size: 0.9rem;
     color: var(--muted);
     display: flex;
     gap: 8px;
-    align-items: center;
+    align-items: center;*/
 }
 .dot {
     width: 10px;
@@ -246,4 +240,120 @@ img {
     color: var(--muted);
     padding-top: 6px;
     text-align: center;
+}
+
+/*=====   accordion  =================*/
+.accordion {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.accordion-item {
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: white;
+}
+
+.accordion-header {
+    background-color: #f8f9fa;
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.accordion-header:hover {
+    background-color: #e9ecef;
+}
+
+.accordion-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+}
+
+.accordion-icon {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+    color: #666;
+}
+
+.accordion-icon.open {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition:
+        max-height 0.3s ease,
+        padding 0.3s ease;
+    background-color: white;
+}
+
+.accordion-content.open {
+    padding: 20px;
+    max-height: 1000px;
+}
+
+.json-content {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 10px;
+    font-family: "Courier New", monospace;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.json-key {
+    color: #d73a49;
+    font-weight: bold;
+}
+
+.json-string {
+    color: #032f62;
+}
+
+.json-number {
+    color: #005cc5;
+}
+
+.json-boolean {
+    color: #6f42c1;
+}
+
+.json-null {
+    color: #6a737d;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.error {
+    text-align: center;
+    padding: 20px;
+    color: #dc3545;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
 }

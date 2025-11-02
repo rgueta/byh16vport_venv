@@ -11,7 +11,7 @@ class SQLiteCLI(cmd.Cmd):
     intro = "🔍 SQLite Interactive Shell (type 'help' for commands)\n"
     prompt = "sqlite> "
 
-    def __init__(self, db_path="nfc_database.db"):
+    def __init__(self, db_path="nfc_cards.db"):
         super().__init__()
         self.db_path = db_path
         self.conn = None
@@ -166,6 +166,35 @@ class SQLiteCLI(cmd.Cmd):
             confirm = input(f"⚠️ ¿Eliminar {count} documentos? (y/N): ")
             if confirm.lower() == "y":
                 self.conn.execute(f"DELETE FROM {table} WHERE {where_condition}")
+                self.conn.commit()
+                print(f"✅ {count} documentos eliminados")
+            else:
+                print("❌ Eliminación cancelada")
+
+        except Exception as e:
+            print(f"❌ Error: {e}")
+
+    def do_clean(self, arg):
+        """Eliminar documentos: delete <tabla> where campo=valor"""
+        try:
+            args = arg.split()
+            if len(args) == 0:
+                print("❌ Uso: delete <tabla> ")
+                return
+
+            table = args[0]
+
+            # Primero contar cuántos se eliminarán
+            cursor = self.conn.execute(f"SELECT COUNT(*) FROM {table}")
+            count = cursor.fetchone()[0]
+
+            if count == 0:
+                print("📭 No hay documentos que coincidan")
+                return
+
+            confirm = input(f"⚠️ ¿Eliminar {count} documentos? (y/N): ")
+            if confirm.lower() == "y":
+                self.conn.execute(f"DELETE FROM {table}")
                 self.conn.commit()
                 print(f"✅ {count} documentos eliminados")
             else:

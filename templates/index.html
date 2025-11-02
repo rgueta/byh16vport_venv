@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <title>Videoportero - Panel...</title>
+        <title>Videoportero</title>
         <link
             rel="stylesheet"
             href="{{ url_for('static', filename='css/pages/index.css') }}"
@@ -13,23 +13,7 @@
     <body>
         <div class="container">
             <div class="header">
-                <h1>🚪 Video Portero Inteligente.</h1>
-                <p>Stream MJPEG Funcional - Modo Diagnóstico</p>
-            </div>
-
-            <div class="status-bar">
-                <div class="status-item" id="streamStatus">
-                    <h3>Stream</h3>
-                    <p>🔄 CONECTANDO...</p>
-                </div>
-                <div class="status-item" id="doorStatus">
-                    <h3>Puerta</h3>
-                    <p>🔒 CERRADA</p>
-                </div>
-                <div class="status-item" id="frameStatus">
-                    <h3>Frames</h3>
-                    <p>0</p>
-                </div>
+                <h2>🚪 Video Portero Inteligente</h2>
             </div>
 
             <!-- Video + header -->
@@ -52,45 +36,22 @@
                     ></canvas>
                 </div>
 
-                <div
-                    style="
-                        padding: 10px 4px;
-                        display: flex;
-                        gap: 10px;
-                        align-items: center;
-                        justify-content: space-between;
-                    "
-                >
-                    <div id="status" class="small"></div>
-                    <div class="small">
-                        Touch-friendly UI — compatible PC & móviles
-                    </div>
+                <div class="status">
+                    <div id="nfc-status" class="small">Status</div>
                     <div class="small">
                         FPS estimado: <span id="fps">—</span>
                     </div>
+                </div>
+
+                <h1>Lista Colapsable con Datos JSON</h1>
+
+                <div class="accordion" id="accordion">
+                    <div class="loading" id="loading">Cargando datos...</div>
                 </div>
             </div>
 
             <!-- Control panel -->
             <aside class="controls card">
-                <div
-                    style="
-                        display: flex;
-                        gap: 10px;
-                        align-items: center;
-                        justify-content: space-between;
-                    "
-                >
-                    <strong>Controles</strong>
-                    <button
-                        id="reloadBtn"
-                        class="btn"
-                        style="padding: 8px 10px; font-size: 0.9rem"
-                    >
-                        🔁 Refrescar
-                    </button>
-                </div>
-
                 <div class="btn-grid" style="margin-top: 6px">
                     <button
                         class="btn primary"
@@ -129,12 +90,32 @@
                     >
                         ⤢ Pantalla
                     </button>
+                    <button
+                        id="reloadBtn"
+                        class="btn"
+                        style="padding: 8px 10px; font-size: 0.9rem"
+                    >
+                        🔁 Refrescar
+                    </button>
                 </div>
 
                 <div style="margin-top: 12px">
-                    <div class="small">Captura reciente</div>
-                    <div class="thumb" id="thumb">
-                        <span id="thumbText">Sin captura</span>
+                    <div class="small">Accesos reciente</div>
+                    <div class="accordion" id="accordion">
+                        {% for item in items %}
+                        <div class="accordion-item" data-id="{{ item.id }}">
+                            <div
+                                class="accordion-header"
+                                onclick="toggleAccordion(this)"
+                            >
+                                <h3>{{ item.title }}</h3>
+                                <span class="accordion-icon">▼</span>
+                            </div>
+                            <div class="accordion-content">
+                                <p>{{ item.content }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
 
@@ -203,7 +184,6 @@
             const connText = document.getElementById("connText");
             const fpsLabel = document.getElementById("fps");
             const thumb = document.getElementById("thumb");
-            const thumbText = document.getElementById("thumbText");
 
             // Try to detect if MJPEG fails — then fallback to HLS/video
             let lastFrameTime = performance.now();
@@ -306,7 +286,6 @@
                     /* ignore autoplay block */
                 });
             }
-
             // Button actions
             async function postAction(action, body = {}) {
                 const url = `${API_BASE}/${action}`;
@@ -380,7 +359,6 @@
                 const img = document.createElement("img");
                 img.src = "data:image/jpeg;base64," + base64;
                 thumb.appendChild(img);
-                thumbText.style.display = "none";
             }
 
             function displayThumbnailFromUrl(url) {
@@ -388,7 +366,6 @@
                 const img = document.createElement("img");
                 img.src = url;
                 thumb.appendChild(img);
-                thumbText.style.display = "none";
             }
 
             // --- 🔔 Eventos del servidor (SSE) ------------------------
@@ -441,9 +418,13 @@
             }
         </script>
 
+        <!==============  Script para el uso del socket.io   =================>
         <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
         <script>
             const socket = io();
+
+            //Accordion
+            // AccordionHeader();
 
             // 🟢 Escuchar evento de timbre físico
             socket.on("alert_request", (data) => {
@@ -471,21 +452,7 @@
                 setTimeout(() => alertDiv.remove(), 6000);
             });
 
-            // 🔒 Escuchar estado de puerta
-            socket.on("door_status", (data) => {
-                const doorStatus = document
-                    .getElementById("doorStatus")
-                    .querySelector("p");
-                if (data.status === "open") {
-                    doorStatus.textContent = "🔓 ABIERTA";
-                    doorStatus.style.color = "#4caf50";
-                } else {
-                    doorStatus.textContent = "🔒 CERRADA";
-                    doorStatus.style.color = "#00bcd4";
-                }
-            });
-
-            // Inicializar audio una vez el usuario interactúe (para evitar bloqueo de autoplay)
+            //============== Inicializar audio una vez el usuario interactúe (para evitar bloqueo de autoplay)
             let audioReady = false;
             document.body.addEventListener("click", () => {
                 if (!audioReady) {
@@ -509,7 +476,7 @@
                 }
             });
 
-            // Cuando llegue el evento de timbre desde el servidor
+            //==================== Cuando llegue el evento de timbre desde el servidor
             function playDoorbell() {
                 const audio = document.getElementById("doorbell");
                 audio.currentTime = 0;
@@ -518,6 +485,92 @@
                     .catch((err) =>
                         console.warn("Error al reproducir doorbell:", err),
                     );
+            }
+
+            // ==================== NFC lecturas  ===============================
+            socket.on("nfc_access", (data) => {
+                console.log("Tarjeta detectada:", data);
+                const status = data.allowed
+                    ? "✅ Acceso permitido"
+                    : "🚫 Acceso denegado";
+                const color = data.allowed ? "green" : "red";
+                const cardInfo = `
+                <div style="padding:10px;margin-top:10px;border:2px solid ${color};border-radius:8px">
+                  <b>${status}</b><br>
+                  UID: ${data.uid}<br>
+                  Nombre: ${data.name || "Desconocido"}
+                </div>`;
+                document.getElementById("nfc-status").innerHTML = cardInfo;
+                createAccordionItems(data);
+            });
+
+            //  ================   Accordion para las lecturas  ======================
+            // Funcion para crear el encabezado del accordion
+            function AccordionHeader() {
+                const accordion = document.getElementById("accordion");
+                accordionItem.className = "accordion-item";
+                accordionItem.innerHTML = `
+                  <button class="accordion-header" onclick="toggleAccordion(this)">
+                      <span class="accordion-title">Tarjetas desconocidas</span>
+                      <span class="accordion-icon">▼</span>
+                  </button>`;
+                accordion.appendChild(accordionItem);
+            }
+
+            // Función para formatear el JSON con colores
+            function syntaxHighlight(json) {
+                try {
+                    // Convertir a string si es objeto
+                    if (typeof json !== "string") {
+                        json = JSON.stringify(json, null, 2);
+                    }
+
+                    // Escapar caracteres HTML
+                    let escapedJson = json
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+
+                    // Aplicar colores de manera más simple
+                    return escapedJson
+                        .replace(
+                            /"([^"]+)":/g,
+                            '<span class="json-key">"$1"</span>:',
+                        )
+                        .replace(
+                            /: "([^"]+)"/g,
+                            ': <span class="json-string">"$1"</span>',
+                        )
+                        .replace(
+                            /: (true|false)/g,
+                            ': <span class="json-boolean">$1</span>',
+                        )
+                        .replace(
+                            /: (null)/g,
+                            ': <span class="json-null">$1</span>',
+                        )
+                        .replace(
+                            /: (\d+)/g,
+                            ': <span class="json-number">$1</span>',
+                        );
+                } catch (error) {
+                    console.error("Error en syntaxHighlight:", error);
+                    return '<span style="color: red">Error formateando JSON</span>';
+                }
+            }
+
+            function createAccordionItems(data) {
+                const accordion = document.getElementById("accordion");
+                const accordionItem = document.createElement("div");
+
+                accordionItem.innerHTML = `
+                <div class="accordion-content">
+                    <div class="json-content">
+                        ${syntaxHighlight(data.name)}
+                    </div>
+                </div>;
+                `;
+                accordion.appendChild(accordionItem);
             }
         </script>
     </body>
