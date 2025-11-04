@@ -97,13 +97,22 @@ def list_usuarios():
     c = conn.cursor()
     c.execute("""
                 SELECT usr.id, usr.nombre, usr.ap, usr.am, tu.tipo,
-                usr.activo, usr.emailFROM usuarios AS usr
+                usr.activo, usr.email FROM usuarios AS usr
                 INNER JOIN tipoUsuario AS tu
                 ON usr.tipoId = tu.id
                 """)
     usuarios = c.fetchall()
     conn.close()
     return usuarios
+
+
+def usuario_byId(id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT * FROM usuarios WHERE id=?", (id,))
+    row = c.fetchone()
+    conn.close()
+    return row is not None and row[0] == 1
 
 
 def is_usuario_activo(id):

@@ -34,18 +34,19 @@
 
 <h2>Tarjetas registradas</h2>
 <table>
-  <tr><th>ID</th><th>Nombre</th><th>Ap_Paterno</th><th>Ap_Materno</th>
-      <th>TipoUsuario</th><th>Activo</th><th>Acciones</th>
+  <tr><th>ID</th><th>Nombre</th><th>APaterno</th><th>AMaterno</th>
+      <th>Email</th><th>TipoUsuario</th><th>Activo</th><th>Acciones</th>
   </tr>
-  {% for id, nombre, ap, am, tipo, activo in usuarios %}
+  {% for id, nombre, ap, am, email, tipo, activo in usuarios %}
   <tr>
     <td>{{ id }}</td>
     <td>
       <form action="/admin/update/{{ id }}" method="POST">
         <input name="nombre" value="{{ nombre }}">
     </td>
-    <td><input name="Ap_Paterno" value="{{ ap }}"></td>
-    <td><input name="Ap_Materno" value="{{ am }}"></td>
+    <td><input name="APaterno" value="{{ ap }}"></td>
+    <td><input name="AMaterno" value="{{ am }}"></td>
+    <td><input name="Email" value="{{ email }}"></td>
     <td>
         <select name="tipoId">
             {% for id, tipo in tipoUsuario %}
