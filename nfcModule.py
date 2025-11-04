@@ -7,13 +7,13 @@ import os
 from buzzer import BuzzerManager
 
 # --- Configuración general ---
-DB_PATH = "/home/bytheg/vport/nfc_cards.db"
+DB_PATH = "/home/bytheg/vport/vport.db"
 PORT = "/dev/serial0"
 BAUD = 9600
 
 # Valores que generan lecturas tardadas o vasura
 # READ_INTERVAL = 0.1  # segundos entre lecturas
-# DEBOUNCE_TIME = 2.0  # tiempo mínimo entre lecturas del mismo UID
+# DEBOUNCE_TIME = 2.0  # tiempo mínimo entre lecturas del mismo ID
 
 # Valores nuevos a prueba
 READ_INTERVAL = 0.05  # intervalo de lectura rápida
@@ -22,7 +22,7 @@ DEBOUNCE_TIME = 1.5  # no leer la misma tarjeta antes de 1.5s
 learn_mode = False  # modo aprendizaje activable desde el panel
 reader_running = True
 
-_last_uid = None
+_last_id = None
 _last_time = 0
 
 buzzer = BuzzerManager()
@@ -33,63 +33,83 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        CREATE TABLE IF NOT EXISTS cards (
-            uid TEXT PRIMARY KEY,
-            name TEXT,
-            level TEXT,
-            enabled INTEGER DEFAULT 1,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        CREATE TABLE IF NOT EXISTS usuarios (
+           	"id"	TEXT NOT NULL,
+           	"nombre"	TEXT,
+           	"ap"	TEXT,
+           	"am"	TEXT,
+            "pwd"	TEXT,
+           	"email"	TEXT,
+           	"cell"	TEXT,
+           	"tipoId"	INTEGER NOT NULL,
+           	"fecha"	DATETIME DEFAULT CURRENT_TIMESTAMP,
+           	"activo"	INTEGER NOT NULL DEFAULT 1,
+           	"Operador"	INTEGER NOT NULL DEFAULT 0,
+           	PRIMARY KEY("id"),
+           	FOREIGN KEY("tipoId") REFERENCES "tipoUsuario"("id")
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS tipoUsuario (
+            "id"	INTEGER,
+           	"tipo"	TEXT,
+           	PRIMARY KEY("id")
+        )
+        """)
     conn.commit()
     conn.close()
 
 
 # --- CRUD básico ---
-def add_card(uid, name="Nueva tarjeta", level="user", enabled=1):
+def add_usuario(id, nombre="Nueva tarjeta", tipoId=2, activo=1):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(
-        "INSERT OR REPLACE INTO cards (uid, name, level, enabled) VALUES (?, ?, ?, ?)",
-        (uid, name, level, enabled),
+        "INSERT OR REPLACE INTO usuarios (id, nombre, tipoId, activo) VALUES (?, ?, ?, ?)",
+        (id, nombre, tipoId, activo),
     )
     conn.commit()
     conn.close()
-    logging.info(f"🆕 Tarjeta agregada: {uid}")
+    logging.info(f"🆕 Tarjeta agregada: {id}")
 
 
-def update_card(uid, name, level, enabled):
+def update_usuario(id, nombre, tipoId, activo):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(
-        "UPDATE cards SET name=?, level=?, enabled=? WHERE uid=?",
-        (name, level, enabled, uid),
+        "UPDATE usuarios SET nombre=?, tipoId=?, activo=? WHERE id=?",
+        (nombre, tipoId, activo, id),
     )
     conn.commit()
     conn.close()
 
 
-def remove_card(uid):
+def remove_usuario(id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("DELETE FROM cards WHERE uid=?", (uid,))
+    c.execute("DELETE FROM usuarios WHERE id=?", (id,))
     conn.commit()
     conn.close()
 
 
-def list_cards():
+def list_usuarios():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT uid, name, level, enabled, timestamp FROM cards")
-    cards = c.fetchall()
+    c.execute("""
+                SELECT usr.id, usr.nombre, usr.ap, usr.am, tu.tipo,
+                usr.activo, usr.emailFROM usuarios AS usr
+                INNER JOIN tipoUsuario AS tu
+                ON usr.tipoId = tu.id
+                """)
+    usuarios = c.fetchall()
     conn.close()
-    return cards
+    return usuarios
 
 
-def is_card_allowed(uid):
+def is_usuario_activo(id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT enabled FROM cards WHERE uid=?", (uid,))
+    c.execute("SELECT activo FROM usuarios WHERE id=?", (id,))
     row = c.fetchone()
     conn.close()
     print(f"row : {row} | row[0]: {row[0]}")
@@ -99,12 +119,12 @@ def is_card_allowed(uid):
 # --- Lectura UART (RDM6300) ---
 def start_reader(callback):
     """Inicia el hilo de lectura NFC (por UART)."""
-    global reader_running, _last_uid, _last_time
+    global reader_running, _last_id, _last_time
     reader_running = True
     logging.info(f"📡 Lector NFC UART iniciado en {PORT}")
 
     def reader_loop():
-        global _last_uid, _last_time
+        global _last_id, _last_time
         try:
             with serial.Serial(PORT, BAUD, timeout=0.05) as ser:
                 buffer = b""
@@ -129,42 +149,40 @@ def start_reader(callback):
 
                                 if frame_len == 14:
                                     try:
-                                        uid_raw = buffer[3:11]
-                                        uid = (
-                                            uid_raw.decode("ascii", errors="ignore")
+                                        id_raw = buffer[3:11]
+                                        id = (
+                                            id_raw.decode("ascii", errors="ignore")
                                             .strip()
                                             .upper()
                                         )
 
-                                        if not all(
-                                            c in "0123456789ABCDEF" for c in uid
-                                        ):
+                                        if not all(c in "0123456789ABCDEF" for c in id):
                                             logging.warning(
-                                                f"⚠️ UID no hexadecimal: {uid}"
+                                                f"⚠️ ID no hexadecimal: {id}"
                                             )
                                             buffer = b""
                                             continue
 
                                         now = time.time()
                                         if (
-                                            uid != _last_uid
+                                            id != _last_id
                                             or (now - _last_time) > DEBOUNCE_TIME
                                         ):
-                                            _last_uid = uid
+                                            _last_id = id
                                             _last_time = now
                                             logging.info(
-                                                f"🎫 Tarjeta detectada UID={uid}"
+                                                f"🎫 Tarjeta detectada ID={id}"
                                             )
                                             buzzer.alert_pattern("success")
-                                            handle_uid(uid, callback)
+                                            handle_id(id, callback)
                                         else:
                                             logging.debug(
-                                                f"⏳ UID repetido ignorado: {uid}"
+                                                f"⏳ ID repetido ignorado: {id}"
                                             )
 
                                     except Exception as e:
                                         logging.warning(
-                                            f"⚠️ Error decodificando UID: {e}"
+                                            f"⚠️ Error decodificando ID: {e}"
                                         )
                                 else:
                                     logging.debug(
@@ -186,18 +204,18 @@ def start_reader(callback):
     threading.Thread(target=reader_loop, daemon=True).start()
 
 
-def handle_uid(uid, callback):
+def handle_id(id, callback):
     global learn_mode
     """Ejecuta el callback que viene del servidor."""
     try:
-        # if is_card_allowed(uid):
+        # if is_usuario_activo(id):
         if learn_mode:
-            add_card(uid, f"Nueva tarjeta ({uid})", "user", 1)
-            logging.info(f"🧠 Modo aprendizaje: tarjeta {uid} agregada automáticamente")
+            add_usuario(id, f"Nueva tarjeta ({id})", "usuario", 1)
+            logging.info(f"🧠 Modo aprendizaje: tarjeta {id} agregada automáticamente")
         if callback:
-            callback(uid)
+            callback(id)
         else:
-            logging.warning("⚠️ No hay callback asignado para procesar el UID.")
+            logging.warning("⚠️ No hay callback asignado para procesar el ID.")
     except Exception as e:
         logging.error(f"⚠️ Error ejecutando callback NFC: {e}")
 

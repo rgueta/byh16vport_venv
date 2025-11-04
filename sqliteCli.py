@@ -11,7 +11,7 @@ class SQLiteCLI(cmd.Cmd):
     intro = "🔍 SQLite Interactive Shell (type 'help' for commands)\n"
     prompt = "sqlite> "
 
-    def __init__(self, db_path="nfc_cards.db"):
+    def __init__(self, db_path="vport.db"):
         super().__init__()
         self.db_path = db_path
         self.conn = None
@@ -232,7 +232,7 @@ class SQLiteCLI(cmd.Cmd):
 
 
 def main():
-    db_path = sys.argv[1] if len(sys.argv) > 1 else "nfc_cards.db"
+    db_path = sys.argv[1] if len(sys.argv) > 1 else "vport.db"
 
     if not os.path.exists(db_path):
         print(f"❌ La base de datos '{db_path}' no existe")
