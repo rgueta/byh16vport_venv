@@ -13,6 +13,7 @@ from flask import (
     stream_with_context,
 )
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 from picamera2 import Picamera2
 import io, threading, time, logging, json, sys
 import queue, nfcModule
@@ -110,6 +111,7 @@ threading.Thread(target=capture_frames, daemon=True).start()
 # 🌐 Flask + SocketIO
 # ------------------------------------------------------------------
 app = Flask(__name__)
+CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.secret_key = "supersecretkey"  # cambia esta cadena
 
@@ -396,12 +398,27 @@ threading.Thread(target=listen_button, daemon=True).start()
 # ==========================
 @app.route("/admin")
 def admin():
+    idx = 1
+    if "idx" in request.args:
+        idx = request.args["idx"]
+
+    logging.warn(f"idx: {idx}")
+
     usuarios = nfcModule.list_usuarios()
-    tipoUsuario = tabla_tipoUsuario()
-    logging.error(f"tabla tipoUsuarios: {tipoUsuario}")
+    tipoUsuario = nfcModule.tabla_tipoUsuario()
+
     return render_template(
         "admin.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
     )
+
+
+# def admin():
+#     usuarios = nfcModule.list_usuarios()
+#     tipoUsuario = nfcModule.tabla_tipoUsuario()
+#     logging.error(f"tabla tipoUsuarios: {tipoUsuario}")
+#     return render_template(
+#         "admin.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
+#     )
 
 
 @app.route("/admin/add", methods=["POST"])
@@ -441,17 +458,24 @@ def admin_delete(id):
     return redirect(url_for("admin"))
 
 
-def tabla_tipoUsuario():
-    try:
-        conn = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT id,tipo FROM tipoUsuario")
-        row = c.fetchall()
-        conn.close()
-        return row
-
-    except Exception as e:
-        logging.error(f"⚠️ Error en tabla_tipoUsuarios: {e}")
+@app.route("/guardar-usuario", methods=["POST"])
+def guardar_usuario():
+    usuario = request.get_json()
+    # logging.info(f"usuario --> {usuario}")
+    nfcModule.add_usuario(
+        usuario.get("id"),
+        usuario.get("nombre"),
+        usuario.get("ap"),
+        usuario.get("am"),
+        usuario.get("pwd"),
+        usuario.get("email"),
+        usuario.get("cell"),
+        usuario.get("tipoId"),
+        int(usuario.get("activo")),
+        int(usuario.get("operador")),
+    )
+    usuarios = nfcModule.list_usuarios()
+    return jsonify({"mensaje": "Usuario guardado correctamente"}), 200
 
 
 # ------------------------------------------------------------------

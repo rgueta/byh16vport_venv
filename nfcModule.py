@@ -61,16 +61,20 @@ def init_db():
 
 
 # --- CRUD básico ---
-def add_usuario(id, nombre="Nueva tarjeta", tipoId=2, activo=1):
+def add_usuario(
+    id, nombre, ap, am, pwd, email, cell="", tipoId=2, activo=1, operador=0
+):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(
-        "INSERT OR REPLACE INTO usuarios (id, nombre, tipoId, activo) VALUES (?, ?, ?, ?)",
-        (id, nombre, tipoId, activo),
+        """
+        INSERT OR REPLACE INTO usuarios (id, nombre, ap, am, pwd, email,
+        cell, tipoId, activo, operador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (id, nombre, ap, am, pwd, email, cell, tipoId, activo, operador),
     )
     conn.commit()
     conn.close()
-    logging.info(f"🆕 Tarjeta agregada: {id}")
+    logging.info(f"🆕 Usuario agregado: {id}, {nombre}")
 
 
 def update_usuario(id, nombre, tipoId, activo):
@@ -97,13 +101,26 @@ def list_usuarios():
     c = conn.cursor()
     c.execute("""
                 SELECT usr.id, usr.nombre, usr.ap, usr.am, tu.tipo,
-                usr.activo, usr.email FROM usuarios AS usr
+                                usr.activo, usr.email,usr.pwd FROM usuarios AS usr
                 INNER JOIN tipoUsuario AS tu
                 ON usr.tipoId = tu.id
                 """)
     usuarios = c.fetchall()
     conn.close()
     return usuarios
+
+
+def tabla_tipoUsuario():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT * FROM tipoUsuario")
+        tipoUsuario = c.fetchall()
+        conn.close()
+        return tipoUsuario
+
+    except Exception as e:
+        logging.error(f"⚠️ Error en tabla_tipoUsuarios: {e}")
 
 
 def usuario_byId(id):

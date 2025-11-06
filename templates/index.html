@@ -114,12 +114,8 @@
                     >
                         🎙️ Hablar
                     </button>
-                    <button
-                        class="btn"
-                        id="fullscreenBtn"
-                        title="Pantalla completa"
-                    >
-                        ⤢ Pantalla
+                    <button class="btn" id="adminBtn" title="Usuarios">
+                        👨 Usuarios
                     </button>
                     <button
                         id="reloadBtn"
@@ -178,6 +174,7 @@
             const STREAM_MJPEG = "/live.m3u8";
             const STREAM_HLS = "{{video_url}}"; // si no hay HLS, no es necesario
             const API_BASE = "/api"; // ejemplo: POST /api/open, /api/unlock, /api/snapshot, /api/talk
+            const ADMIN_URL = "{{ url_for('admin') }}";
 
             var video = document.getElementById("videoStream");
             var videoSrc = "{{ video_url }}"; // Nombre de tu archivo M3U8
@@ -244,7 +241,9 @@
                         {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ reason: "web_button" }),
+                            body: JSON.stringify({
+                                reason: "web_button",
+                            }),
                         },
                     );
 
@@ -334,14 +333,9 @@
 
             // Fullscreen
             document
-                .getElementById("fullscreenBtn")
+                .getElementById("adminBtn")
                 .addEventListener("click", () => {
-                    const el = document.getElementById("videoInner");
-                    if (!document.fullscreenElement) {
-                        el.requestFullscreen?.();
-                    } else {
-                        document.exitFullscreen?.();
-                    }
+                    window.location.href = ADMIN_URL;
                 });
 
             // Reload stream
