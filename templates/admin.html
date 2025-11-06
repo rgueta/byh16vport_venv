@@ -84,8 +84,56 @@
             </form>
             <p><a href="/">⬅️ Volver al videoportero</a></p>
         </details>
+
         <h2>Tarjetas registradas</h2>
-        <table id="userTable">
+        <!------------------ Barra de búsqueda ---------------->
+        <div class="search-box">
+            <input
+                type="text"
+                id="busqueda"
+                placeholder="Buscar por nombre, apellido, email o ID..."
+            />
+            <button onclick="buscarUsuarios()">Buscar</button>
+            <button onclick="limpiarBusqueda()">Limpiar</button>
+        </div>
+
+        <!-- Controles de paginación superior -->
+        <div class="pagination" id="paginacionSuperior">
+            <!-- Se llena dinámicamente -->
+        </div>
+
+        <!-- Tabla de usuarios -->
+        <div id="tablaUsuarios">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Tipo</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla">
+                    <!-- Se llena dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loading indicator -->
+        <div class="loading" id="loading">Cargando usuarios...</div>
+
+        <!-- Controles de paginación inferior -->
+        <div class="pagination" id="paginacionInferior">
+            <!-- Se llena dinámicamente -->
+        </div>
+
+        <!-- Información de paginación -->
+        <div id="infoPaginacion"></div>
+    </div>
+
+        <!--<table id="userTable">
             <tr><th>ID</th><th>Nombre</th><th>Email</th><th>TipoUsuario</th>
                 <th>Activo</th><th>Operador</th><th>Acciones</th>
             </tr>
@@ -129,196 +177,14 @@
             </td>
             </tr>
             {% endfor %}
-        </table>
+        </table>-->
+
+
         <!-- JavaScript para manejar el envío del formulario -->
-        <script>
-
-        <!------------    Guardar nuevo Usuario   ------>
-        document.getElementById('userForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevenir envío tradicional del formulario
-
-            // Recopilar datos del formulario
-            const formData = new FormData(this);
-
-            // Convertir FormData a objeto JSON
-            const jsonData = {
-                    id: document.getElementById('inputId').value,
-                    nombre: document.getElementById('inputNombre').value,
-                    ap: document.getElementById('inputAPaterno').value,
-                    ap: document.getElementById('inputAMaterno').value,
-                    email: document.getElementById('inputEmail').value,
-                    pwd: document.getElementById('inputPwd').value,
-                    cell: document.getElementById('inputCell').value,
-                    tipoId: document.getElementById('selectTipo').value,
-                    // Checkboxes manejados directamente
-                    operador: document.getElementById('checkOperador').checked ? '1' : '0',
-                    activo: document.getElementById('checkActivo').checked ? '1' : '0'
-                };
-
-            // Mostrar loading en el botón
-            const saveButton = document.getElementById('saveButton');
-            const originalText = saveButton.innerHTML;
-            saveButton.innerHTML = '⏳ Guardando...';
-            saveButton.disabled = true;
-            console.log('jsonData: ', jsonData);
-
-            // Enviar datos al servidor Flask
-            fetch('/guardar-usuario', {  // Cambia esta URL por tu endpoint de Flask
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(jsonData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Manejar respuesta exitosa
-                console.log('Usuario guardado:', data);
-                alert('✅ Usuario guardado exitosamente');
-
-                // Resetear formulario si es necesario
-                this.reset();
-
-                // Aquí puedes agregar más lógica según la respuesta
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('❌ Error al guardar el usuario: ' + error.message);
-            })
-            .finally(() => {
-                // Restaurar botón
-                saveButton.innerHTML = originalText;
-                saveButton.disabled = false;
-            });
-        });
-
-        // Manejar el botón cancelar si es necesario
-        document.getElementById('cancelButton').addEventListener('click', function() {
-            document.getElementById('userForm').reset();
-            this.style.display = 'none';
-            // Aquí puedes agregar más lógica para cancelar edición
-        });
-        </script>
-
+        <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/paginado.js') }}"></script>
         <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-        <script>
-            const Id = document.getElementById("inputId");
-            const Nombre = document.getElementById("nombre");
-            const tipoUsuario = document.getElementById("tipoUsuario");
-
-            const socket = io();
-            socket.on("nfc_access", data => {
-            Id.value = data.id;
-            console.log("Tarjeta detectada:", data);
-            const status = data.activo ? "✅ Acceso permitido" : "🚫 Acceso denegado";
-            const color = data.activo ? "green" : "red";
-            const cardInfo = `
-                <div style="padding:10px;margin-top:10px;border:2px solid ${color};border-radius:8px">
-                <b>${status}</b><br>
-                UID: ${data.id}<br>
-                Nombre: ${data.nombre || 'Desconocido'}
-                </div>`;
-            document.getElementById("nfc-status").innerHTML = cardInfo;
-            });
-
-            userTable.addEventListener("click", (e) => {
-                if (e.target.classList.contains("edit-btn")) {
-                    // ... (Tu código para cargar los datos en el formulario) ...
-
-                    // 💡 Abrir la sección colapsable al hacer clic en Editar
-                    document.querySelector(".form-container").open = true;
-
-                    saveButton.textContent = "💾 Actualizar Usuario";
-                    // ...
-                }
-            });
-
-            async function LeerTarjetas(){
-              try {
-                  const response = await fetch('/admin/add', {
-                      method: 'POST', // Usamos el método POST para enviar datos
-                      headers: {
-                          'Content-Type': 'application/json' // Indicamos que el cuerpo es JSON
-                      },
-                      body: JSON.stringify(tagData) // Convertimos el objeto a cadena JSON
-                  });
-
-                  // 4. Procesar la respuesta del servidor
-                  if (response.ok) {
-                      const result = await response.json();
-                      alert(`✅ Tarjeta agregada con éxito! Mensaje: ${result.message || 'OK'}`);
-
-                      // Opcional: Recargar la página para ver la tarjeta en la tabla
-                      window.location.reload();
-                  } else {
-                      const errorResult = await response.json();
-                      alert(`❌ Error al agregar tarjeta: ${errorResult.error || response.statusText}`);
-                  }
-
-              } catch (error) {
-                  console.error('Error de red o del servidor:', error);
-                  alert('❌ Fallo la comunicación con el servidor.');
-              }
-            }
-
-            async function agregarTag(event){
-              if (event) {
-                      event.preventDefault();
-                  }
-                console.log('se agregara: ' +
-                    JSON.stringify({'uid':Id.value, 'name': Nombre.value, 'tipoId': tipoUsuario.value }));
-
-
-               // 2. Validación de Inputs
-                if (Id.value == "" || Nombre.value == "") {
-                    alert("⚠️ El campo UID y Nombre son obligatorios.");
-                    Id.focus();
-                    return; // Detiene la función si el UID está vacío
-                }
-
-                // El campo 'Nombre' y 'Nivel' siempre tendrán un valor (el nombre puede estar vacío, pero no es requerido por HTML)
-
-                const tagData = {'id': Id.value,'nombre': Nombre.value,'level': tipoUsuario.value};
-                console.log('Datos a enviar: ', JSON.stringify(tagData));
-
-                // 3. Envío del objeto JSON a /admin/add
-                try {
-                    const response = await fetch('/admin/add', {
-                        method: 'POST', // Usamos el método POST para enviar datos
-                        headers: {
-                            'Content-Type': 'application/json' // Indicamos que el cuerpo es JSON
-                        },
-                        body: JSON.stringify(tagData) // Convertimos el objeto a cadena JSON
-                    });
-
-                    // 4. Procesar la respuesta del servidor
-                    if (response.ok) {
-                        const result = await response.json();
-                        alert(`✅ Tarjeta agregada con éxito! Mensaje: ${result.message || 'OK'}`);
-
-                        // Opcional: Recargar la página para ver la tarjeta en la tabla
-                        window.location.reload();
-                    } else {
-                        const errorResult = await response.json();
-                        alert(`❌ Error al agregar tarjeta: ${errorResult.error || response.statusText}`);
-                    }
-
-                } catch (error) {
-                    console.error('Error de red o del servidor:', error);
-                    alert('❌ Fallo la comunicación con el servidor.');
-                }
-            }
-
-
-        </script>
+        <script src="{{ url_for('static', filename='js/pages/admin/sockets.js') }}"></script>
         <div id="nfc-status"></div>
     </body>
 </html>
