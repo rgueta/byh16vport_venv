@@ -11,11 +11,12 @@ from flask import (
     url_for,
     session,
     stream_with_context,
+    g,
 )
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from picamera2 import Picamera2
-import io, threading, time, logging, json, sys
+import io, threading, time, logging, json, sys, math
 import queue, nfcModule
 
 
@@ -476,6 +477,96 @@ def guardar_usuario():
     )
     usuarios = nfcModule.list_usuarios()
     return jsonify({"mensaje": "Usuario guardado correctamente"}), 200
+
+
+# ===========   Paginado  =================================
+@app.route("/admin/usuarios", methods=["GET"])
+def obtener_usuarios():
+    try:
+        # Obtener parámetros de paginación
+        pagina = request.args.get("pagina", 1, type=int)
+        por_pagina = request.args.get(
+            "por_pagina", 50, type=int
+        )  # 50 registros por página
+        busqueda = request.args.get("busqueda", "", type=str)
+
+        # Validar parámetros
+        if pagina < 1:
+            pagina = 1
+        if por_pagina > 100:  # Límite máximo
+            por_pagina = 100
+
+        # Calcular offset
+        offset = (pagina - 1) * por_pagina
+
+        g.db = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
+        g.db.row_factory = nfcModule.sqlite3.Row
+
+        db = g.db
+
+        # Construir consulta base con búsqueda
+        query_base = """
+            SELECT u.*, t.tipo
+            FROM usuarios u
+            LEFT JOIN tipoUsuario t ON u.tipoId = t.id
+        """
+
+        query_contar = "SELECT COUNT(*) as total FROM usuarios u"
+
+        params = []
+        where_conditions = []
+
+        if busqueda:
+            where_conditions.append("""
+                (u.nombre LIKE ? OR u.ap LIKE ? OR u.email LIKE ? OR u.id LIKE ?)
+            """)
+            param_busqueda = f"%{busqueda}%"
+            params.extend(
+                [param_busqueda, param_busqueda, param_busqueda, param_busqueda]
+            )
+
+        # Aplicar WHERE si hay condiciones
+        if where_conditions:
+            where_clause = " WHERE " + " AND ".join(where_conditions)
+            query_base += where_clause
+            query_contar += where_clause
+
+        # Ordenar y paginar
+        query_base += " ORDER BY u.fecha DESC LIMIT ? OFFSET ?"
+        params.extend([por_pagina, offset])
+
+        # Ejecutar consulta para obtener usuarios
+        usuarios = db.execute(query_base, params).fetchall()
+
+        # Ejecutar consulta para contar total
+        total_result = db.execute(
+            query_contar, params[:-2] if busqueda else []
+        ).fetchone()
+        total_usuarios = total_result["total"]
+
+        # Calcular total de páginas
+        total_paginas = math.ceil(total_usuarios / por_pagina)
+
+        # Convertir a lista de diccionarios
+        usuarios_list = [dict(usuario) for usuario in usuarios]
+
+        return jsonify(
+            {
+                "usuarios": usuarios_list,
+                "paginacion": {
+                    "pagina_actual": pagina,
+                    "por_pagina": por_pagina,
+                    "total_usuarios": total_usuarios,
+                    "total_paginas": total_paginas,
+                    "has_prev": pagina > 1,
+                    "has_next": pagina < total_paginas,
+                },
+            }
+        ), 200
+
+    except Exception as e:
+        logging.error(f"Error al obtener usuarios: {str(e)}")
+        return jsonify({"error": "Error al obtener usuarios"}), 500
 
 
 # ------------------------------------------------------------------

@@ -1,5 +1,5 @@
 let paginaActual = 1;
-let porPagina = 50;
+let porPagina = 25;
 let busquedaActual = "";
 let totalPaginas = 1;
 
@@ -19,7 +19,8 @@ async function cargarUsuarios(pagina = 1) {
             busqueda: busquedaActual,
         });
 
-        const response = await fetch(`/usuarios?${params}`);
+        console.log(`url -->  /admin/usuarios?${params}`);
+        const response = await fetch(`/admin/usuarios?${params}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -55,11 +56,12 @@ function mostrarUsuarios(usuarios) {
         const fila = document.createElement("tr");
         fila.innerHTML = `
          <td>${usuario.id}</td>
-         <td>${usuario.nombre} ${usuario.aPaterno} ${usuario.aMaterno}</td>
+         <td>${usuario.nombre} ${usuario.ap} ${usuario.am}</td>
          <td>${usuario.email}</td>
-         <td>${usuario.tipo_nombre || usuario.tipoId}</td>
+         <td>${usuario.tipo}</td>
          <td>${usuario.cell || ""}</td>
          <td>${usuario.activo === "1" ? "Activo" : "Inactivo"}</td>
+         <td>${usuario.operador === "1" ? "Si" : "No"}</td>
      `;
         cuerpoTabla.appendChild(fila);
     });

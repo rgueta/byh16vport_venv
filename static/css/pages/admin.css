@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    background: #121212;
+    background: #071024;
     color: #fff;
     margin: 0;
     padding: 10px;
@@ -139,4 +139,35 @@ details[open] summary::after {
 .btn.edit-btn {
     background-color: #ffc107;
     color: black;
+}
+
+/* =========  PAGINADO  =========*/
+.pagination {
+    margin: 20px 0;
+}
+.pagination button {
+    margin: 0 5px;
+    padding: 5px 10px;
+}
+.loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+}
+.search-box {
+    margin: 20px 0;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    color: #071024;
+    background-color: #f2f2f2;
 }

@@ -1,7 +1,7 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
     <head>
-        <meta charset="UTF-8">
+        <meta charset="UTF-8" />
         <title>Panel NFC</title>
         <link
             rel="stylesheet"
@@ -23,11 +23,21 @@
                     </div>
                     <div class="form-group">
                         <label for="inputNombre">Nombre:</label>
-                        <input type="text" id="inputNombre" name="nombre" required />
+                        <input
+                            type="text"
+                            id="inputNombre"
+                            name="nombre"
+                            required
+                        />
                     </div>
                     <div class="form-group">
                         <label for="inputAPaterno">Apellido Paterno:</label>
-                        <input type="text" id="inputAPaterno" name="aPaterno" required />
+                        <input
+                            type="text"
+                            id="inputAPaterno"
+                            name="aPaterno"
+                            required
+                        />
                     </div>
                     <div class="form-group">
                         <label for="inputAMaterno">Apellido Materno:</label>
@@ -38,11 +48,21 @@
                 <div class="form-group-row">
                     <div class="form-group">
                         <label for="inputEmail">Email:</label>
-                        <input type="email" id="inputEmail" name="email" required />
+                        <input
+                            type="email"
+                            id="inputEmail"
+                            name="email"
+                            required
+                        />
                     </div>
                     <div class="form-group">
                         <label for="inputPwd">Contraseña (PWD):</label>
-                        <input type="password" id="inputPwd" name="pwd" placeholder="Dejar vacío para no cambiar" />
+                        <input
+                            type="password"
+                            id="inputPwd"
+                            name="pwd"
+                            placeholder="Dejar vacío para no cambiar"
+                        />
                     </div>
                     <div class="form-group">
                         <label for="inputCell">Teléfono (Cell):</label>
@@ -54,9 +74,11 @@
                     <div class="form-group">
                         <label for="selectTipo">Tipo ID:</label>
                         <select id="selectTipo" name="tipo">
-                            <option value="">Selecciona un tipo de usuario</option>
+                            <option value="">
+                                Selecciona un tipo de usuario
+                            </option>
                             {% for id,tipo in tipoUsuario %}
-                                <option value="{{id}}">{{tipo}}</option>
+                            <option value="{{id}}">{{tipo}}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -65,18 +87,38 @@
                 <div class="form-group-row control-row">
                     <div>
                         <label for="checkOperador">Operador:</label>
-                        <input type="checkbox" id="checkOperador" name="operador" value = '1' />
+                        <input
+                            type="checkbox"
+                            id="checkOperador"
+                            name="operador"
+                            value="1"
+                        />
                     </div>
 
                     <div>
                         <label for="checkActivo">Activo:</label>
-                        <input type="checkbox" id="checkActivo" name="activo" value = '1' checked />
+                        <input
+                            type="checkbox"
+                            id="checkActivo"
+                            name="activo"
+                            value="1"
+                            checked
+                        />
                     </div>
                     <div>
-                        <button type="submit" id="saveButton" class="btn primary">
+                        <button
+                            type="submit"
+                            id="saveButton"
+                            class="btn primary"
+                        >
                             💾 Guardar Usuario
                         </button>
-                        <button type="button" id="cancelButton" class="btn secondary" style="display: none">
+                        <button
+                            type="button"
+                            id="cancelButton"
+                            class="btn secondary"
+                            style="display: none"
+                        >
                             Cancelar Edición
                         </button>
                     </div>
@@ -85,54 +127,55 @@
             <p><a href="/">⬅️ Volver al videoportero</a></p>
         </details>
 
-        <h2>Tarjetas registradas</h2>
-        <!------------------ Barra de búsqueda ---------------->
-        <div class="search-box">
-            <input
-                type="text"
-                id="busqueda"
-                placeholder="Buscar por nombre, apellido, email o ID..."
-            />
-            <button onclick="buscarUsuarios()">Buscar</button>
-            <button onclick="limpiarBusqueda()">Limpiar</button>
+        <div class="container">
+            <h2>Tarjetas registradas</h2>
+            <!------------------ Barra de búsqueda ---------------->
+            <div class="search-box">
+                <input
+                    type="text"
+                    id="busqueda"
+                    placeholder="Buscar por nombre, apellido, email o ID..."
+                />
+                <button onclick="buscarUsuarios()">Buscar</button>
+                <button onclick="limpiarBusqueda()">Limpiar</button>
+            </div>
+
+            <!-- Controles de paginación superior -->
+            <div class="pagination" id="paginacionSuperior">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- Tabla de usuarios -->
+            <div id="tablaUsuarios">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Teléfono</th>
+                            <th>Estado</th>
+                            <th>Operador</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla">
+                        <!-- Se llena dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Loading indicator -->
+            <div class="loading" id="loading">Cargando usuarios...</div>
+
+            <!-- Controles de paginación inferior -->
+            <div class="pagination" id="paginacionInferior">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- Información de paginación -->
+            <div id="infoPaginacion"></div>
         </div>
-
-        <!-- Controles de paginación superior -->
-        <div class="pagination" id="paginacionSuperior">
-            <!-- Se llena dinámicamente -->
-        </div>
-
-        <!-- Tabla de usuarios -->
-        <div id="tablaUsuarios">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Tipo</th>
-                        <th>Teléfono</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody id="cuerpoTabla">
-                    <!-- Se llena dinámicamente -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Loading indicator -->
-        <div class="loading" id="loading">Cargando usuarios...</div>
-
-        <!-- Controles de paginación inferior -->
-        <div class="pagination" id="paginacionInferior">
-            <!-- Se llena dinámicamente -->
-        </div>
-
-        <!-- Información de paginación -->
-        <div id="infoPaginacion"></div>
-    </div>
-
         <!--<table id="userTable">
             <tr><th>ID</th><th>Nombre</th><th>Email</th><th>TipoUsuario</th>
                 <th>Activo</th><th>Operador</th><th>Acciones</th>
@@ -144,8 +187,6 @@
                 <form action="/admin/update/{{ id }}" method="POST">
                     <input name="nombre" value="{{ nombre }} {{ ap }} {{ am }}">
                     </td>
-                    <!--<td><input name="APaterno" value="{{ ap }}"></td>
-                    <td><input name="AMaterno" value="{{ am }}"></td>-->
                     <td><input name="Email" value="{{ email }}"></td>
                     <td>
                         <select name="tipoId">
@@ -178,7 +219,6 @@
             </tr>
             {% endfor %}
         </table>-->
-
 
         <!-- JavaScript para manejar el envío del formulario -->
         <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>
