@@ -36,13 +36,44 @@ h1 {
 }
 
 .form-section {
-    /*flex: 3;*/
-    /*min-width: 300px;*/
     width: 100%;
 }
 
 .search-box {
     width: 90%;
+}
+
+#tablaUsuarios table thead tr th {
+    text-align: center;
+}
+
+/* Responsive para la tabla - Ocultar columnas progresivamente */
+/* Pantallas grandes (todas las columnas visibles) */
+.col-id {
+    display: table-cell;
+}
+.col-nombre {
+    display: table-cell;
+}
+
+.col-email {
+    display: table-cell;
+}
+.col-cell {
+    display: table-cell;
+}
+.col-tipo {
+    display: table-cell;
+}
+.col-estado {
+    display: table-cell;
+}
+.col-operador {
+    display: table-cell;
+}
+
+.col-accion {
+    display: table-cell;
 }
 
 #tablaUsuarios table {
@@ -246,5 +277,12 @@ a:hover {
         flex-direction: column;
         gap: 15px;
         align-items: flex-start;
+    }
+
+    th.col-email,
+    td.col-email,
+    th.col-cell,
+    td.col-cell {
+        display: none;
     }
 }

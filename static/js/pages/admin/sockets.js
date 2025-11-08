@@ -17,7 +17,7 @@ socket.on("nfc_access", (data) => {
     document.getElementById("nfc-status").innerHTML = cardInfo;
 });
 
-userTable.addEventListener("click", (e) => {
+tablaUsuarios.addEventListener("click", (e) => {
     if (e.target.classList.contains("edit-btn")) {
         // ... (Tu código para cargar los datos en el formulario) ...
         console.log("le di click al edit-btn!");

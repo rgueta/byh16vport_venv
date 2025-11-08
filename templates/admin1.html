@@ -8,6 +8,10 @@
             rel="stylesheet"
             href="{{ url_for('static', filename='css/pages/admin1.css') }}"
         />
+        <script
+            src="https://kit.fontawesome.com/85c88a4976.js"
+            crossorigin="anonymous"
+        ></script>
     </head>
     <body>
         <h1>Gestión de Usuarios</h1>
@@ -168,14 +172,14 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Email</th>
-                            <th>Tipo</th>
-                            <th>Teléfono</th>
-                            <th>Estado</th>
-                            <th>Operador</th>
-                            <th>Accion</th>
+                            <th class="col-id">ID</th>
+                            <th class="col-nombre">Nombre</th>
+                            <th class="col-email">Email</th>
+                            <th class="col-tipo">Tipo</th>
+                            <th class="col-cell">Teléfono</th>
+                            <th class="col-estado">Estado</th>
+                            <th class="col-operador">Operador</th>
+                            <th class="col-accion">Accion</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpoTabla">
@@ -196,54 +200,9 @@
             <div id="infoPaginacion"></div>
         </div>
 
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/sockets.js') }}"></script>
         <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>
         <script src="{{ url_for('static', filename='js/pages/admin/paginado.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/pages/admin/sockets.js') }}"></script>
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                const userDetails = document.getElementById("userDetails");
-                const toggleButton = document.getElementById("toggleSection");
-                const sectionStatus = document.getElementById("sectionStatus");
-
-                // Función para actualizar el estado visual
-                function updateSectionStatus() {
-                    if (userDetails.open) {
-                        sectionStatus.textContent =
-                            "La sección está actualmente abierta";
-                        sectionStatus.className = "status open";
-                        toggleButton.textContent =
-                            "➖ Colapsar Sección de Usuario";
-                    } else {
-                        sectionStatus.textContent =
-                            "La sección está actualmente cerrada";
-                        sectionStatus.className = "status closed";
-                        toggleButton.textContent =
-                            "➕ Expandir Sección de Usuario";
-                    }
-                }
-
-                // Controlar el botón externo
-                toggleButton.addEventListener("click", function () {
-                    userDetails.open = !userDetails.open;
-                    updateSectionStatus();
-                });
-
-                // Actualizar estado cuando se cambia manualmente (haciendo clic en el summary)
-                userDetails.addEventListener("toggle", updateSectionStatus);
-
-                // Inicializar el estado
-                updateSectionStatus();
-
-                // Manejar el envío del formulario
-                document
-                    .getElementById("userForm")
-                    .addEventListener("submit", function (e) {
-                        e.preventDefault();
-                        alert(
-                            "Formulario enviado correctamente (esto es una simulación)",
-                        );
-                    });
-            });
-        </script>
     </body>
 </html>

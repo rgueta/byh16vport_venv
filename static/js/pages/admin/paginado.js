@@ -4,6 +4,24 @@ let busquedaActual = "";
 let totalPaginas = 1;
 let data = {};
 
+// elementos para collapse
+const userDetails = document.getElementById("userDetails");
+const toggleButton = document.getElementById("toggleSection");
+const sectionStatus = document.getElementById("sectionStatus");
+
+// Función para actualizar el estado visual
+function updateSectionStatus() {
+    if (userDetails.open) {
+        sectionStatus.textContent = "La sección está actualmente abierta";
+        sectionStatus.className = "status open";
+        toggleButton.textContent = "➖ Colapsar Sección de Usuario";
+    } else {
+        sectionStatus.textContent = "La sección está actualmente cerrada";
+        sectionStatus.className = "status closed";
+        toggleButton.textContent = "➕ Expandir Sección de Usuario";
+    }
+}
+
 // Cargar usuarios al iniciar
 document.addEventListener("DOMContentLoaded", function () {
     cargarUsuarios();
@@ -63,21 +81,22 @@ function mostrarUsuarios(usuarios) {
     usuarios.forEach((usuario) => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
-         <td>${usuario.id}</td>
-         <td>${usuario.nombre} ${usuario.ap} ${usuario.am}</td>
-         <td>${usuario.email}</td>
-         <td>${usuario.tipo}</td>
-         <td>${usuario.cell || ""}</td>
-         <td>${usuario.activo === "1" ? "Activo" : "Inactivo"}</td>
-         <td>${usuario.operador === "1" ? "Si" : "No"}</td>
-         <td class="acciones">
+         <td class="col-id">${usuario.id}</td>
+         <td class="col-nombre">${usuario.nombre} ${usuario.ap} ${usuario.am}</td>
+         <td class="col-email">${usuario.email}</td>
+         <td class="col-tipo">${usuario.tipo}</td>
+         <td class="col-cell">${usuario.cell || ""}</td>
+         <td class="col-estado">${usuario.activo === "1" ? "Activo" : "Inactivo"}</td>
+         <td class="col-operador">${usuario.operador === "1" ? "Si" : "No"}</td>
+         <td class="acciones col-accion">
             <button class="btn btn-warning btn-sm btn-action edit-btn"
-            data-id="${usuario.id}">
-                <i class="fas fa-edit"></i> Editar
+            data-id="${usuario.id}" title="Editar">
+                <i class="fas fa-edit"></i>
             </button>
-            <button class="btn btn-danger btn-sm btn-action" data-id="${usuario.id}"
-                    onclick="eliminarUsuario({{ usuario.id }})">
-                <i class="fas fa-trash"></i> Eliminar
+            <button class="btn btn-danger btn-sm btn-action"
+              data-id="${usuario.id}" title="Editar"
+              onclick="eliminarUsuario({{ usuario.id }})">
+                <i class="fas fa-trash"></i>
             </button>
         </td>
      `;
