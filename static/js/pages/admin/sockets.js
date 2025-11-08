@@ -14,7 +14,11 @@ socket.on("nfc_access", (data) => {
      UID: ${data.id}<br>
      Nombre: ${data.nombre || "Desconocido"}
      </div>`;
-    document.getElementById("nfc-status").innerHTML = cardInfo;
+
+    const nfc_status = document.getElementById("nfc-status");
+    if (nfc_status !== null) {
+        document.getElementById("nfc-status").innerHTML = cardInfo;
+    }
 });
 
 tablaUsuarios.addEventListener("click", (e) => {

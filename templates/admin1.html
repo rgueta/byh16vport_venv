@@ -97,9 +97,9 @@
                                     <option value="">
                                         Selecciona un tipo de usuario
                                     </option>
-                                    <option value="1">Administrador</option>
-                                    <option value="2">Usuario Regular</option>
-                                    <option value="3">Invitado</option>
+                                    {% for id,tipo in tipoUsuario %}
+                                    <option value="{{id}}">{{tipo}}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                         </div>

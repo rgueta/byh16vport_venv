@@ -87,7 +87,7 @@ function mostrarUsuarios(usuarios) {
          <td class="col-tipo">${usuario.tipo}</td>
          <td class="col-cell">${usuario.cell || ""}</td>
          <td class="col-estado">${usuario.activo === "1" ? "Activo" : "Inactivo"}</td>
-         <td class="col-operador">${usuario.operador === "1" ? "Si" : "No"}</td>
+         <td class="col-operador">${usuario.operador === 1 ? "Si" : "No"}</td>
          <td class="acciones col-accion">
             <button class="btn btn-warning btn-sm btn-action edit-btn"
             data-id="${usuario.id}" title="Editar">
@@ -221,11 +221,11 @@ function editUser(userId) {
         // Llenar el formulario con los datos del usuario
         document.getElementById("inputId").value = user.id;
         document.getElementById("inputNombre").value = user.nombre;
-        document.getElementById("inputAPaterno").value = user.aPaterno;
-        document.getElementById("inputAMaterno").value = user.aMaterno || "";
+        document.getElementById("inputAPaterno").value = user.ap;
+        document.getElementById("inputAMaterno").value = user.am || "";
         document.getElementById("inputEmail").value = user.email;
         document.getElementById("inputCell").value = user.cell || "";
-        document.getElementById("selectTipo").value = user.tipo;
+        document.getElementById("selectTipo").value = user.tipoId;
         document.getElementById("checkOperador").checked = user.operador;
         document.getElementById("checkActivo").checked = user.activo;
 
@@ -239,20 +239,17 @@ function editUser(userId) {
         // Expandir la sección
         if (!userDetails.open) {
             userDetails.open = true;
-            updateSectionStatus();
         }
     }
 }
 
-// Función para actualizar el estado visual
-function updateSectionStatus() {
-    if (userDetails.open) {
-        sectionStatus.textContent = "La sección está actualmente abierta";
-        sectionStatus.className = "status open";
-        toggleButton.textContent = "➖ Colapsar Sección de Usuario";
-    } else {
-        sectionStatus.textContent = "La sección está actualmente cerrada";
-        sectionStatus.className = "status closed";
-        toggleButton.textContent = "➕ Expandir Sección de Usuario";
-    }
+function nuevoUsuario() {
+    document.getElementById("inputNombre").value = "";
+    document.getElementById("inputAPaterno").value = "";
+    document.getElementById("inputAMaterno").value = "";
+    document.getElementById("inputEmail").value = "";
+    document.getElementById("inputCell").value = "";
+    document.getElementById("selectTipo").value = "";
+    document.getElementById("checkOperador").checked = false;
+    document.getElementById("checkActivo").checked = user.activo;
 }
