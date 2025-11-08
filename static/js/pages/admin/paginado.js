@@ -2,10 +2,18 @@ let paginaActual = 1;
 let porPagina = 25;
 let busquedaActual = "";
 let totalPaginas = 1;
+let data = {};
 
 // Cargar usuarios al iniciar
 document.addEventListener("DOMContentLoaded", function () {
     cargarUsuarios();
+});
+
+// Búsqueda con Enter
+document.getElementById("busqueda").addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+        buscarUsuarios();
+    }
 });
 
 // Función principal para cargar usuarios
@@ -19,9 +27,9 @@ async function cargarUsuarios(pagina = 1) {
             busqueda: busquedaActual,
         });
 
-        console.log(`url -->  /admin/usuarios?${params}`);
         const response = await fetch(`/admin/usuarios?${params}`);
-        const data = await response.json();
+        // const data = await response.json();
+        data = await response.json();
 
         if (response.ok) {
             paginaActual = data.paginacion.pagina_actual;
@@ -62,8 +70,34 @@ function mostrarUsuarios(usuarios) {
          <td>${usuario.cell || ""}</td>
          <td>${usuario.activo === "1" ? "Activo" : "Inactivo"}</td>
          <td>${usuario.operador === "1" ? "Si" : "No"}</td>
+         <td class="acciones">
+            <button class="btn btn-warning btn-sm btn-action edit-btn"
+            data-id="${usuario.id}">
+                <i class="fas fa-edit"></i> Editar
+            </button>
+            <button class="btn btn-danger btn-sm btn-action" data-id="${usuario.id}"
+                    onclick="eliminarUsuario({{ usuario.id }})">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </td>
      `;
         cuerpoTabla.appendChild(fila);
+    });
+
+    // Agregar event listeners a los botones de editar
+    document.querySelectorAll(".edit-btn").forEach((button) => {
+        button.addEventListener("click", function () {
+            const userId = this.getAttribute("data-id");
+            editUser(userId);
+        });
+    });
+
+    // Agregar event listeners a los botones de eliminar
+    document.querySelectorAll(".delete-btn").forEach((button) => {
+        button.addEventListener("click", function () {
+            const userId = this.getAttribute("data-id");
+            showDeleteConfirmation(userId);
+        });
     });
 }
 
@@ -160,9 +194,46 @@ function mostrarLoading(mostrar) {
         : "none";
 }
 
-// Búsqueda con Enter
-document.getElementById("busqueda").addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-        buscarUsuarios();
+// Función para editar un usuario
+function editUser(userId) {
+    const user = data.usuarios.find((u) => u.id === userId);
+
+    if (user) {
+        // Llenar el formulario con los datos del usuario
+        document.getElementById("inputId").value = user.id;
+        document.getElementById("inputNombre").value = user.nombre;
+        document.getElementById("inputAPaterno").value = user.aPaterno;
+        document.getElementById("inputAMaterno").value = user.aMaterno || "";
+        document.getElementById("inputEmail").value = user.email;
+        document.getElementById("inputCell").value = user.cell || "";
+        document.getElementById("selectTipo").value = user.tipo;
+        document.getElementById("checkOperador").checked = user.operador;
+        document.getElementById("checkActivo").checked = user.activo;
+
+        // Cambiar a modo edición
+        isEditing = true;
+        currentEditId = userId;
+        document.getElementById("saveButton").textContent =
+            "💾 Actualizar Usuario";
+        cancelButton.style.display = "inline-block";
+
+        // Expandir la sección
+        if (!userDetails.open) {
+            userDetails.open = true;
+            updateSectionStatus();
+        }
     }
-});
+}
+
+// Función para actualizar el estado visual
+function updateSectionStatus() {
+    if (userDetails.open) {
+        sectionStatus.textContent = "La sección está actualmente abierta";
+        sectionStatus.className = "status open";
+        toggleButton.textContent = "➖ Colapsar Sección de Usuario";
+    } else {
+        sectionStatus.textContent = "La sección está actualmente cerrada";
+        sectionStatus.className = "status closed";
+        toggleButton.textContent = "➕ Expandir Sección de Usuario";
+    }
+}

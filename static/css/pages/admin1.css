@@ -1,0 +1,250 @@
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f5f7fa;
+    color: #333;
+    /*line-height: 1.6;*/
+    padding: 10px;
+    /*max-width: 1200px;*/
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /*flex-wrap: wrap;*/
+}
+
+.controls {
+    flex: 1;
+    min-width: 250px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-section {
+    /*flex: 3;*/
+    /*min-width: 300px;*/
+    width: 100%;
+}
+
+.search-box {
+    width: 90%;
+}
+
+#tablaUsuarios table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 4px;
+    text-align: left;
+}
+th {
+    color: #071024;
+    background-color: #f2f2f2;
+}
+
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.card summary {
+    cursor: pointer;
+    outline: none;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    background-color: #3498db;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+.card summary:hover {
+    background-color: #2980b9;
+}
+
+.card summary h2 {
+    display: inline;
+    margin: 0;
+    flex-grow: 1;
+}
+
+/* Quitar el marcador nativo del summary para control visual */
+details summary::-webkit-details-marker,
+details summary::marker {
+    display: none;
+}
+
+/* Añadir un ícono de flecha con CSS */
+.card summary::after {
+    content: "▶"; /* Flecha derecha */
+    margin-left: 10px;
+    transition: transform 0.2s;
+    font-size: 0.8em;
+}
+
+details[open] summary::after {
+    content: "▼"; /* Flecha abajo cuando está abierto */
+}
+
+.form-container {
+    padding: 0;
+}
+
+.form-group-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-group-row:last-child {
+    border-bottom: none;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+input:focus,
+select:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.control-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.control-row div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn.primary {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.btn.primary:hover {
+    background-color: #27ae60;
+}
+
+.btn.secondary {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn.secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.btn.external {
+    background-color: #3498db;
+    color: white;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.btn.external:hover {
+    background-color: #2980b9;
+}
+
+a {
+    color: #3498db;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.status {
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.status.open {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status.closed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .form-group-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .control-row {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+}

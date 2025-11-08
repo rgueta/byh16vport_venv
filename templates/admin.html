@@ -157,6 +157,7 @@
                             <th>Teléfono</th>
                             <th>Estado</th>
                             <th>Operador</th>
+                            <th>Accion</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpoTabla">
@@ -176,49 +177,6 @@
             <!-- Información de paginación -->
             <div id="infoPaginacion"></div>
         </div>
-        <!--<table id="userTable">
-            <tr><th>ID</th><th>Nombre</th><th>Email</th><th>TipoUsuario</th>
-                <th>Activo</th><th>Operador</th><th>Acciones</th>
-            </tr>
-            {% for id, nombre, ap, am, email, tipo, activo, operador in usuarios %}
-            <tr>
-            <td>{{ id }}</td>
-            <td>
-                <form action="/admin/update/{{ id }}" method="POST">
-                    <input name="nombre" value="{{ nombre }} {{ ap }} {{ am }}">
-                    </td>
-                    <td><input name="Email" value="{{ email }}"></td>
-                    <td>
-                        <select name="tipoId">
-                            {% for id, tipo in tipoUsuario %}
-                            <option
-                                value="{{ id }}"
-                                {% if id == tipoId %}selected{% endif %}>
-                                {{ tipo }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </td>
-                    <td>
-                        <input name="activo" type="checkbox" value="1"
-                            {% if activo==1 %}checked{% endif %}
-                        >
-                    </td>
-                    <td>
-                        <input name="operador" type="checkbox" value="1"
-                            {% if operador==1 %}checked{% endif %}
-                        >
-                    </td>
-                    <td>
-                        <button title="Editar">✏️</button>
-                </form>
-            <form action="/admin/delete/{{ id }}" method="POST" onsubmit="return confirm('¿Eliminar tarjeta?')">
-                <button title="Borrar" style="background:#a00;">🗑️</button>
-            </form>
-            </td>
-            </tr>
-            {% endfor %}
-        </table>-->
 
         <!-- JavaScript para manejar el envío del formulario -->
         <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>

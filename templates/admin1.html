@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sección Colapsable con Control Externo</title>
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='css/pages/admin1.css') }}"
+        />
+    </head>
+    <body>
+        <h1>Gestión de Usuarios</h1>
+        <div class="container">
+            <div class="form-section">
+                <details class="card form-container" id="userDetails">
+                    <summary>
+                        <h2>➕ Agregar/Editar Usuario</h2>
+                    </summary>
+
+                    <form id="userForm">
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="inputId">Id:</label>
+                                <input
+                                    type="text"
+                                    id="inputId"
+                                    name="Id"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputNombre">Nombre:</label>
+                                <input
+                                    type="text"
+                                    id="inputNombre"
+                                    name="nombre"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputAPaterno"
+                                    >Apellido Paterno:</label
+                                >
+                                <input
+                                    type="text"
+                                    id="inputAPaterno"
+                                    name="aPaterno"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputAMaterno"
+                                    >Apellido Materno:</label
+                                >
+                                <input
+                                    type="text"
+                                    id="inputAMaterno"
+                                    name="aMaterno"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="inputEmail">Email:</label>
+                                <input
+                                    type="email"
+                                    id="inputEmail"
+                                    name="email"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputPwd">Contraseña (PWD):</label>
+                                <input
+                                    type="password"
+                                    id="inputPwd"
+                                    name="pwd"
+                                    placeholder="Dejar vacío para no cambiar"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputCell">Teléfono (Cell):</label>
+                                <input type="text" id="inputCell" name="cell" />
+                            </div>
+                        </div>
+
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="selectTipo">Tipo ID:</label>
+                                <select id="selectTipo" name="tipo">
+                                    <option value="">
+                                        Selecciona un tipo de usuario
+                                    </option>
+                                    <option value="1">Administrador</option>
+                                    <option value="2">Usuario Regular</option>
+                                    <option value="3">Invitado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group-row control-row">
+                            <div>
+                                <label for="checkOperador">Operador:</label>
+                                <input
+                                    type="checkbox"
+                                    id="checkOperador"
+                                    name="operador"
+                                    value="1"
+                                />
+                            </div>
+
+                            <div>
+                                <label for="checkActivo">Activo:</label>
+                                <input
+                                    type="checkbox"
+                                    id="checkActivo"
+                                    name="activo"
+                                    value="1"
+                                    checked
+                                />
+                            </div>
+                            <div>
+                                <button
+                                    type="submit"
+                                    id="saveButton"
+                                    class="btn primary"
+                                >
+                                    💾 Guardar Usuario
+                                </button>
+                                <button
+                                    type="button"
+                                    id="cancelButton"
+                                    class="btn secondary"
+                                    style="display: none"
+                                >
+                                    Cancelar Edición
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <p style="padding: 0 20px 20px">
+                        <a href="/">⬅️ Volver al videoportero</a>
+                    </p>
+                </details>
+            </div>
+
+            <h2>Tarjetas registradas</h2>
+            <!------------------ Barra de búsqueda ---------------->
+            <div class="search-box">
+                <input
+                    type="text"
+                    id="busqueda"
+                    placeholder="Buscar por nombre, apellido, email o ID..."
+                />
+                <button onclick="buscarUsuarios()">Buscar</button>
+                <button onclick="limpiarBusqueda()">Limpiar</button>
+            </div>
+
+            <!-- Controles de paginación superior -->
+            <div class="pagination" id="paginacionSuperior">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- Tabla de usuarios -->
+            <div id="tablaUsuarios">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Teléfono</th>
+                            <th>Estado</th>
+                            <th>Operador</th>
+                            <th>Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla">
+                        <!-- Se llena dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Loading indicator -->
+            <div class="loading" id="loading">Cargando usuarios...</div>
+
+            <!-- Controles de paginación inferior -->
+            <div class="pagination" id="paginacionInferior">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- Información de paginación -->
+            <div id="infoPaginacion"></div>
+        </div>
+
+        <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/paginado.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/sockets.js') }}"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const userDetails = document.getElementById("userDetails");
+                const toggleButton = document.getElementById("toggleSection");
+                const sectionStatus = document.getElementById("sectionStatus");
+
+                // Función para actualizar el estado visual
+                function updateSectionStatus() {
+                    if (userDetails.open) {
+                        sectionStatus.textContent =
+                            "La sección está actualmente abierta";
+                        sectionStatus.className = "status open";
+                        toggleButton.textContent =
+                            "➖ Colapsar Sección de Usuario";
+                    } else {
+                        sectionStatus.textContent =
+                            "La sección está actualmente cerrada";
+                        sectionStatus.className = "status closed";
+                        toggleButton.textContent =
+                            "➕ Expandir Sección de Usuario";
+                    }
+                }
+
+                // Controlar el botón externo
+                toggleButton.addEventListener("click", function () {
+                    userDetails.open = !userDetails.open;
+                    updateSectionStatus();
+                });
+
+                // Actualizar estado cuando se cambia manualmente (haciendo clic en el summary)
+                userDetails.addEventListener("toggle", updateSectionStatus);
+
+                // Inicializar el estado
+                updateSectionStatus();
+
+                // Manejar el envío del formulario
+                document
+                    .getElementById("userForm")
+                    .addEventListener("submit", function (e) {
+                        e.preventDefault();
+                        alert(
+                            "Formulario enviado correctamente (esto es una simulación)",
+                        );
+                    });
+            });
+        </script>
+    </body>
+</html>

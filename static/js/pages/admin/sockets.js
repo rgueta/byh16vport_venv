@@ -20,7 +20,7 @@ socket.on("nfc_access", (data) => {
 userTable.addEventListener("click", (e) => {
     if (e.target.classList.contains("edit-btn")) {
         // ... (Tu código para cargar los datos en el formulario) ...
-
+        console.log("le di click al edit-btn!");
         // 💡 Abrir la sección colapsable al hacer clic en Editar
         document.querySelector(".form-container").open = true;
 
