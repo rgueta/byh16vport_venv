@@ -2,94 +2,218 @@
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
-        <title>Administración de Tarjetas NFC</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sección Colapsable con Control Externo</title>
         <link
             rel="stylesheet"
             href="{{ url_for('static', filename='css/pages/admin.css') }}"
         />
+        <script
+            src="https://kit.fontawesome.com/85c88a4976.js"
+            crossorigin="anonymous"
+        ></script>
     </head>
     <body>
-        <h1>Administración de Tarjetas NFC</h1>
-
-        <div id="formCard">
-            <input id="uid" placeholder="UID" />
-            <input id="name" placeholder="Nombre" />
-            <select id="level">
-                <option value="user">Usuario</option>
-                <option value="admin">Administrador</option>
-            </select>
-            <button onclick="addCard()">Agregar</button>
+        <div class="form-group-row control-row">
+            <div>
+                <p style="padding: 0 20px 20px">
+                    <a href="/">⬅️ Volver al videoportero</a>
+                </p>
+            </div>
+            <div>
+                <h1>Gestión de Usuarios</h1>
+            </div>
         </div>
 
-        <table id="cardsTable">
-            <thead>
-                <tr>
-                    <th>UID</th>
-                    <th>Nombre</th>
-                    <th>Nivel</th>
-                    <th>Activo</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="container">
+            <div class="form-section">
+                <details class="card form-container" id="userDetails">
+                    <summary>
+                        <h2>
+                            <i class="fa fa-puzzle-piece"></i>
+                            Agregar/Editar Usuario
+                        </h2>
+                    </summary>
 
-        <script>
-            async function loadCards() {
-                const res = await fetch("/api/cards");
-                const data = await res.json();
-                const tbody = document.querySelector("#cardsTable tbody");
-                tbody.innerHTML = "";
-                data.forEach((card) => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-      <td>${card.uid}</td>
-      <td>${card.name || "-"}</td>
-      <td>${card.level}</td>
-      <td>${card.enabled ? "✅" : "🚫"}</td>
-      <td>${card.timestamp}</td>
-      <td>
-        <button onclick="toggleCard('${card.uid}', ${card.enabled ? 0 : 1})">
-          ${card.enabled ? "Desactivar" : "Activar"}
-        </button>
-        <button onclick="deleteCard('${card.uid}')">Eliminar</button>
-      </td>
-    `;
-                    tbody.appendChild(tr);
-                });
-            }
+                    <form id="userForm">
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="inputId">Id:</label>
+                                <input
+                                    type="text"
+                                    id="inputId"
+                                    name="Id"
+                                    required
+                                    readonly="True"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputNombre">Nombre:</label>
+                                <input
+                                    type="text"
+                                    id="inputNombre"
+                                    name="nombre"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputAPaterno"
+                                    >Apellido Paterno:</label
+                                >
+                                <input
+                                    type="text"
+                                    id="inputAPaterno"
+                                    name="aPaterno"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputAMaterno"
+                                    >Apellido Materno:</label
+                                >
+                                <input
+                                    type="text"
+                                    id="inputAMaterno"
+                                    name="aMaterno"
+                                />
+                            </div>
+                        </div>
 
-            async function addCard() {
-                const uid = document.getElementById("uid").value.trim();
-                const name = document.getElementById("name").value.trim();
-                const level = document.getElementById("level").value;
-                if (!uid) return alert("Falta UID");
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="inputEmail">Email:</label>
+                                <input
+                                    type="email"
+                                    id="inputEmail"
+                                    name="email"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputPwd">Contraseña:</label>
+                                <input
+                                    type="password"
+                                    id="inputPwd"
+                                    name="pwd"
+                                    placeholder="Dejar vacío para no cambiar"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputCell">Teléfono (Cell):</label>
+                                <input type="text" id="inputCell" name="cell" />
+                            </div>
+                        </div>
 
-                await fetch("/api/cards", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ uid, name, level }),
-                });
-                loadCards();
-            }
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="selectTipo">Tipo ID:</label>
+                                <select id="selectTipo" name="tipo">
+                                    <option value="">
+                                        Selecciona un tipo de usuario
+                                    </option>
+                                    {% for id,tipo in tipoUsuario %}
+                                    <option value="{{id}}">{{tipo}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
 
-            async function toggleCard(uid, enabled) {
-                await fetch(`/api/cards/${uid}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ enabled }),
-                });
-                loadCards();
-            }
+                        <div class="form-group-row control-row">
+                            <div>
+                                <label for="checkOperador">Operador:</label>
+                                <input
+                                    type="checkbox"
+                                    id="checkOperador"
+                                    name="operador"
+                                    value="1"
+                                />
+                            </div>
 
-            async function deleteCard(uid) {
-                if (!confirm("¿Eliminar tarjeta?")) return;
-                await fetch(`/api/cards/${uid}`, { method: "DELETE" });
-                loadCards();
-            }
+                            <div>
+                                <label for="checkActivo">Activo:</label>
+                                <input
+                                    type="checkbox"
+                                    id="checkActivo"
+                                    name="activo"
+                                    value="1"
+                                    checked
+                                />
+                            </div>
+                            <div>
+                                <button
+                                    type="submit"
+                                    id="saveButton"
+                                    class="btn primary"
+                                >
+                                    💾 Guardar Usuario
+                                </button>
+                                <button
+                                    type="button"
+                                    id="cancelButton"
+                                    class="btn secondary"
+                                    style="display: none"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </details>
+            </div>
 
-            loadCards();
-        </script>
+            <h2>Tarjetas registradas</h2>
+            <!------------------ Barra de búsqueda ---------------->
+            <div class="search-box">
+                <input
+                    type="text"
+                    id="busqueda"
+                    placeholder="Buscar por nombre, apellido, email o ID..."
+                />
+                <button onclick="buscarUsuarios()">Buscar</button>
+                <button onclick="limpiarBusqueda()">Limpiar</button>
+            </div>
+
+            <!-- Controles de paginación superior -->
+            <div class="pagination" id="paginacionSuperior">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- Tabla de usuarios -->
+            <div id="tablaUsuarios">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-id">ID</th>
+                            <th class="col-nombre">Nombre</th>
+                            <th class="col-email">Email</th>
+                            <th class="col-tipo">Tipo</th>
+                            <th class="col-cell">Teléfono</th>
+                            <th class="col-estado">Estado</th>
+                            <th class="col-operador">Operador</th>
+                            <th class="col-accion">Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla">
+                        <!-- Se llena dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Loading indicator -->
+            <div class="loading" id="loading">Cargando usuarios...</div>
+
+            <!-- Controles de paginación inferior -->
+            <div class="pagination" id="paginacionInferior">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- Información de paginación -->
+            <div id="infoPaginacion"></div>
+        </div>
+
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/sockets.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/paginado.js') }}"></script>
     </body>
 </html>

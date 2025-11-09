@@ -29,7 +29,7 @@
         "level": "INFO"
     },
     "buzzer": {
-        "gpio_pin": 22,
+        "gpio_pin": 18,
         "duration": 0.5
     }
 }

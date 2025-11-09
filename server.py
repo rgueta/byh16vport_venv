@@ -11,11 +11,14 @@ from flask import (
     url_for,
     session,
     stream_with_context,
+    g,
 )
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 from picamera2 import Picamera2
-import io, threading, time, logging, json, sys
+import io, threading, time, logging, json, sys, math
 import queue, nfcModule
+
 
 # ------------------------------------------------------------------
 # 🔧 Configuración
@@ -49,6 +52,7 @@ def load_config(path="config.json"):
 
 
 config = load_config()
+last_usuario = {"id": None, "nombre": None, "activo": False, "timestamp": None}
 
 ADMIN_USER = config.get("admin", {}).get("username", "admin")
 ADMIN_PASS = config.get("admin", {}).get("password", "1234")
@@ -108,6 +112,7 @@ threading.Thread(target=capture_frames, daemon=True).start()
 # 🌐 Flask + SocketIO
 # ------------------------------------------------------------------
 app = Flask(__name__)
+CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.secret_key = "supersecretkey"  # cambia esta cadena
 
@@ -132,64 +137,6 @@ def video_feed():
     return Response(
         generate_stream(), mimetype="multipart/x-mixed-replace; boundary=frame"
     )
-
-
-# ===========================================================
-# 🧭 RUTAS PARA ADMINISTRACIÓN DE TARJETAS NFC
-# ===========================================================
-
-from functools import wraps
-
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get("logged_in"):
-            return redirect(url_for("login_page"))
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
-@app.route("/admin")
-# @login_required
-def admin_page():
-    return render_template("admin.html")
-
-
-@app.route("/api/cards", methods=["GET"])
-# @login_required
-def api_list_cards():
-    cards = nfcModule.list_cards()
-    keys = ["uid", "name", "level", "enabled", "timestamp"]
-    return jsonify([dict(zip(keys, c)) for c in cards])
-
-
-@app.route("/api/cards", methods=["POST"])
-def api_add_card():
-    data = request.get_json()
-    uid = data.get("uid")
-    name = data.get("name", "")
-    level = data.get("level", "user")
-    if not uid:
-        return jsonify({"error": "UID requerido"}), 400
-    nfcModule.add_card(uid, name, level)
-    return jsonify({"message": "Tarjeta agregada"})
-
-
-@app.route("/api/cards/<uid>", methods=["PUT"])
-def api_update_card(uid):
-    data = request.get_json()
-    nfcModule.update_card(
-        uid, name=data.get("name"), level=data.get("level"), enabled=data.get("enabled")
-    )
-    return jsonify({"message": "Tarjeta actualizada"})
-
-
-@app.route("/api/cards/<uid>", methods=["DELETE"])
-def api_delete_card(uid):
-    nfcModule.remove_card(uid)
-    return jsonify({"message": "Tarjeta eliminada"})
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -333,39 +280,280 @@ def events():
     return Response(stream_with_context(event_stream()), mimetype="text/event-stream")
 
 
-def broadcast_event(event_type, data):
-    """Encola un evento JSON para enviar al navegador"""
-    event_queue.put({"type": event_type, **data})
+def broadcast_event(event, data):
+    """Envía eventos NFC al panel /admin usando SocketIO"""
+    try:
+        socketio.emit(event, data)
+    except Exception as e:
+        logger.error(f"Error en broadcast_event: {e}")
 
 
-# ------------------------------------------------------------------
+# --------------------------------------------
 # 🎫 CALLBACK PARA TARJETAS NFC
 # ------------------------------------------------------------------
-def on_card_detected(uid):
-    allowed = nfcModule.is_card_allowed(uid)
-    logger.info(f"🎫 Tarjeta detectada UID={uid}, permitido={allowed}")
 
-    broadcast_event("nfc_access", {"uid": uid, "allowed": allowed})
 
-    if allowed:
-        threading.Thread(target=activate_lock, daemon=True).start()
-    else:
-        logger.warning(f"🚫 Acceso denegado para UID={uid}")
+def on_usuario_detected(id):
+    try:
+        conn = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
+        conn.row_factory = nfcModule.sqlite3.Row
+        c = conn.cursor()
+        c.execute(
+            "SELECT nombre, ap, am, pwd, email, cell, tipoId, fecha, activo, operador FROM usuarios WHERE id=?",
+            (id,),
+        )
+        row = c.fetchone()
+        conn.close()
+        if row:
+            nombre = row["nombre"]
+            ap = row["ap"]
+            am = row["am"]
+            pwd = row["pwd"]
+            email = row["email"]
+            cell = row["cell"]
+            tipoId = row["tipoId"]
+            fecha = row["fecha"]
+            activo = row["activo"]
+            operador = row["operador"]
+        else:
+            nombre = "Desconocido"
+            ap = ""
+            am = ""
+            pwd = ""
+            email = ""
+            cell = ""
+            tipoId = 0
+            fecha = (time.strftime("%Y-%m-%d %H:%M:%S"),)
+            activo = 0
+            operador = 0
+
+        last_usuario = {
+            "id": id,
+            "nombre": nombre,
+            "ap": ap,
+            "am": am,
+            "pwd": pwd,
+            "email": email,
+            "cell": cell,
+            "tipoId": tipoId,
+            "fecha": fecha,
+            "activo": bool(activo),
+            "operador": bool(operador),
+        }
+
+        logging.info(
+            f"🎫 Tarjeta ID={id} | {'✅ Autorizada' if activo else '❌ Denegada'} | {nombre}"
+        )
+
+        broadcast_event("nfc_access", last_usuario)
+
+        if activo:
+            threading.Thread(target=activate_lock, daemon=True).start()
+        else:
+            logging.warning(f"🚫 Acceso denegado para ID={id}")
+
+    except Exception as e:
+        logging.error(f"⚠️ Error en on_usuario_detected: {e}")
 
 
 threading.Thread(target=listen_button, daemon=True).start()
 
+
+# =========================
+#  PANEL DE ADMINISTRACIÓN NFC
+# ==========================
+@app.route("/admin")
+def admin():
+    idx = 1
+    if "idx" in request.args:
+        idx = request.args["idx"]
+
+    logging.warn(f"idx: {idx}")
+
+    usuarios = nfcModule.list_usuarios()
+    tipoUsuario = nfcModule.tabla_tipoUsuario()
+
+    return render_template(
+        "admin.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
+    )
+
+
+# @app.route("/admin1")
+# def admin1():
+#     idx = 1
+#     if "idx" in request.args:
+#         idx = request.args["idx"]
+
+#     logging.warn(f"idx: {idx}")
+
+#     usuarios = nfcModule.list_usuarios()
+#     tipoUsuario = nfcModule.tabla_tipoUsuario()
+
+#     return render_template(
+#         "admin1.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
+#     )
+
+
+@app.route("/admin/add", methods=["POST"])
+def admin_add():
+    data = request.get_json()
+    id = data.get("id", "").strip().upper()
+    nombre = data.get("nombre", "").strip()
+    tipoId = data.get("tipoId", 2)  # Valor por defecto 'user' si no se envía
+    logger.info(f"datos recibidos:  {data}")
+    if not id:
+        return {"error": "El campo ID es obligatorio."}, 400
+    nfcModule.add_usuario(id, nombre, tipoId)
+    return {"message": "Tarjeta agregada exitosamente."}, 201
+
+
+# version para recibir como form
+def admin_add_():
+    id = request.form["id"].strip().upper()
+    nombre = request.form["nombre"].strip()
+    tipoId = request.form["tipoId"]
+    nfcModule.add_usuario(id, nombre, tipoId)
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/update/<id>", methods=["POST"])
+def admin_update(id):
+    nombre = request.form.get("nombre", "")
+    tipoId = request.form.get("tipoId", 2)
+    activo = int(request.form.get("activo", 1))
+    nfcModule.usuario(id, nombre, tipoId, activo)
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/delete/<uid>", methods=["POST"])
+def admin_delete(id):
+    nfcModule.remove_usuario(id)
+    return redirect(url_for("admin"))
+
+
+@app.route("/guardar-usuario", methods=["POST"])
+def guardar_usuario():
+    usuario = request.get_json()
+    # logging.info(f"usuario --> {usuario}")
+    nfcModule.add_usuario(
+        usuario.get("id"),
+        usuario.get("nombre"),
+        usuario.get("ap"),
+        usuario.get("am"),
+        usuario.get("pwd"),
+        usuario.get("email"),
+        usuario.get("cell"),
+        usuario.get("tipoId"),
+        int(usuario.get("activo")),
+        int(usuario.get("operador")),
+    )
+    usuarios = nfcModule.list_usuarios()
+    return jsonify({"mensaje": "Usuario guardado correctamente"}), 200
+
+
+# ===========   Paginado  =================================
+@app.route("/admin/usuarios", methods=["GET"])
+def obtener_usuarios():
+    try:
+        # Obtener parámetros de paginación
+        pagina = request.args.get("pagina", 1, type=int)
+        por_pagina = request.args.get(
+            "por_pagina", 50, type=int
+        )  # 50 registros por página
+        busqueda = request.args.get("busqueda", "", type=str)
+
+        # Validar parámetros
+        if pagina < 1:
+            pagina = 1
+        if por_pagina > 100:  # Límite máximo
+            por_pagina = 100
+
+        # Calcular offset
+        offset = (pagina - 1) * por_pagina
+
+        g.db = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
+        g.db.row_factory = nfcModule.sqlite3.Row
+
+        db = g.db
+
+        # Construir consulta base con búsqueda
+        query_base = """
+            SELECT u.*, t.tipo
+            FROM usuarios u
+            LEFT JOIN tipoUsuario t ON u.tipoId = t.id
+        """
+
+        query_contar = "SELECT COUNT(*) as total FROM usuarios u"
+
+        params = []
+        where_conditions = []
+
+        if busqueda:
+            where_conditions.append("""
+                (u.nombre LIKE ? OR u.ap LIKE ? OR u.email LIKE ? OR u.id LIKE ?)
+            """)
+            param_busqueda = f"%{busqueda}%"
+            params.extend(
+                [param_busqueda, param_busqueda, param_busqueda, param_busqueda]
+            )
+
+        # Aplicar WHERE si hay condiciones
+        if where_conditions:
+            where_clause = " WHERE " + " AND ".join(where_conditions)
+            query_base += where_clause
+            query_contar += where_clause
+
+        # Ordenar y paginar
+        query_base += " ORDER BY u.fecha DESC LIMIT ? OFFSET ?"
+        params.extend([por_pagina, offset])
+
+        # Ejecutar consulta para obtener usuarios
+        usuarios = db.execute(query_base, params).fetchall()
+
+        # Ejecutar consulta para contar total
+        total_result = db.execute(
+            query_contar, params[:-2] if busqueda else []
+        ).fetchone()
+        total_usuarios = total_result["total"]
+
+        # Calcular total de páginas
+        total_paginas = math.ceil(total_usuarios / por_pagina)
+
+        # Convertir a lista de diccionarios
+        usuarios_list = [dict(usuario) for usuario in usuarios]
+
+        return jsonify(
+            {
+                "usuarios": usuarios_list,
+                "paginacion": {
+                    "pagina_actual": pagina,
+                    "por_pagina": por_pagina,
+                    "total_usuarios": total_usuarios,
+                    "total_paginas": total_paginas,
+                    "has_prev": pagina > 1,
+                    "has_next": pagina < total_paginas,
+                },
+            }
+        ), 200
+
+    except Exception as e:
+        logging.error(f"Error al obtener usuarios: {str(e)}")
+        return jsonify({"error": "Error al obtener usuarios"}), 500
+
+
 # ------------------------------------------------------------------
-# 🏁 Main
+# 🏁 Main Prog section
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     try:
         # Iniciar lector NFC en segundo plano
         nfcModule.init_db()
         threading.Thread(
-            target=nfcModule.start_reader, args=(on_card_detected,), daemon=True
+            target=nfcModule.start_reader, args=(on_usuario_detected,), daemon=True
         ).start()
-        logger.info("📡 Lector NFC (RDM6300) iniciado en hilo de fondo")
+        logger.info(
+            "📡 Lector NFC (RDM6300) iniciado        # nfcModule.start_reader(on_usuario_detected) en hilo de fondo"
+        )
 
         socketio.run(
             app,
@@ -379,4 +567,5 @@ if __name__ == "__main__":
         picam2.stop()
         if GPIO:
             GPIO.cleanup()
+        nfcModule.reader_running = False
         logger.info("🧹 Servidor detenido correctamente")
