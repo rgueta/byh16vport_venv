@@ -17,7 +17,7 @@ from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from picamera2 import Picamera2
 import io, threading, time, logging, json, sys, math
-import queue, nfcModule
+import queue, nfcModule, db
 
 
 # ------------------------------------------------------------------
@@ -295,8 +295,8 @@ def broadcast_event(event, data):
 
 def on_usuario_detected(id):
     try:
-        conn = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
-        conn.row_factory = nfcModule.sqlite3.Row
+        conn = db.sqlite3.connect(db.DB_PATH)
+        conn.row_factory = db.sqlite3.Row
         c = conn.cursor()
         c.execute(
             "SELECT nombre, ap, am, pwd, email, cell, tipoId, fecha, activo, operador FROM usuarios WHERE id=?",
@@ -360,7 +360,7 @@ threading.Thread(target=listen_button, daemon=True).start()
 
 
 # =========================
-#  PANEL DE ADMINISTRACIÓN NFC
+#  PANEL DE ADMINISTRACIÓN
 # ==========================
 @app.route("/admin")
 def admin():
@@ -370,28 +370,12 @@ def admin():
 
     logging.warn(f"idx: {idx}")
 
-    usuarios = nfcModule.list_usuarios()
-    tipoUsuario = nfcModule.tabla_tipoUsuario()
+    usuarios = db.list_usuarios()
+    tipoUsuario = db.tabla_tipoUsuario()
 
     return render_template(
         "admin.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
     )
-
-
-# @app.route("/admin1")
-# def admin1():
-#     idx = 1
-#     if "idx" in request.args:
-#         idx = request.args["idx"]
-
-#     logging.warn(f"idx: {idx}")
-
-#     usuarios = nfcModule.list_usuarios()
-#     tipoUsuario = nfcModule.tabla_tipoUsuario()
-
-#     return render_template(
-#         "admin1.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
-#     )
 
 
 @app.route("/admin/add", methods=["POST"])
@@ -403,7 +387,7 @@ def admin_add():
     logger.info(f"datos recibidos:  {data}")
     if not id:
         return {"error": "El campo ID es obligatorio."}, 400
-    nfcModule.add_usuario(id, nombre, tipoId)
+    db.add_usuario(id, nombre, tipoId)
     return {"message": "Tarjeta agregada exitosamente."}, 201
 
 
@@ -412,7 +396,7 @@ def admin_add_():
     id = request.form["id"].strip().upper()
     nombre = request.form["nombre"].strip()
     tipoId = request.form["tipoId"]
-    nfcModule.add_usuario(id, nombre, tipoId)
+    db.add_usuario(id, nombre, tipoId)
     return redirect(url_for("admin"))
 
 
@@ -421,13 +405,13 @@ def admin_update(id):
     nombre = request.form.get("nombre", "")
     tipoId = request.form.get("tipoId", 2)
     activo = int(request.form.get("activo", 1))
-    nfcModule.usuario(id, nombre, tipoId, activo)
+    db.usuario(id, nombre, tipoId, activo)
     return redirect(url_for("admin"))
 
 
 @app.route("/admin/delete/<uid>", methods=["POST"])
 def admin_delete(id):
-    nfcModule.remove_usuario(id)
+    db.remove_usuario(id)
     return redirect(url_for("admin"))
 
 
@@ -435,7 +419,7 @@ def admin_delete(id):
 def guardar_usuario():
     usuario = request.get_json()
     # logging.info(f"usuario --> {usuario}")
-    nfcModule.add_usuario(
+    db.add_usuario(
         usuario.get("id"),
         usuario.get("nombre"),
         usuario.get("ap"),
@@ -447,7 +431,7 @@ def guardar_usuario():
         int(usuario.get("activo")),
         int(usuario.get("operador")),
     )
-    usuarios = nfcModule.list_usuarios()
+    usuarios = db.list_usuarios()
     return jsonify({"mensaje": "Usuario guardado correctamente"}), 200
 
 
@@ -471,10 +455,10 @@ def obtener_usuarios():
         # Calcular offset
         offset = (pagina - 1) * por_pagina
 
-        g.db = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
-        g.db.row_factory = nfcModule.sqlite3.Row
+        g.db = db.sqlite3.connect(db.DB_PATH)
+        g.db.row_factory = db.sqlite3.Row
 
-        db = g.db
+        dbase = g.db
 
         # Construir consulta base con búsqueda
         query_base = """
@@ -508,10 +492,10 @@ def obtener_usuarios():
         params.extend([por_pagina, offset])
 
         # Ejecutar consulta para obtener usuarios
-        usuarios = db.execute(query_base, params).fetchall()
+        usuarios = dbase.execute(query_base, params).fetchall()
 
         # Ejecutar consulta para contar total
-        total_result = db.execute(
+        total_result = dbase.execute(
             query_contar, params[:-2] if busqueda else []
         ).fetchone()
         total_usuarios = total_result["total"]
@@ -547,7 +531,7 @@ def obtener_usuarios():
 if __name__ == "__main__":
     try:
         # Iniciar lector NFC en segundo plano
-        nfcModule.init_db()
+        db.init_db()
         threading.Thread(
             target=nfcModule.start_reader, args=(on_usuario_detected,), daemon=True
         ).start()
