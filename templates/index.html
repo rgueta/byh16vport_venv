@@ -108,7 +108,7 @@
                         title="Tomar foto"
                         onclick="capturar()"
                     >
-                        📸 Captura.
+                        📸 Captura
                     </button>
                     <button
                         class="btn"
@@ -128,35 +128,6 @@
                         <i class="fa fa-user-circle-o" aria-hidden="true"></i>
                         Usuarios
                     </button>
-                </div>
-
-                <div style="margin-top: 12px">
-                    <div class="small">Accesos reciente</div>
-                    <div class="accordion" id="accordion">
-                        {% for item in items %}
-                        <div class="accordion-item" data-id="{{ item.id }}">
-                            <div
-                                class="accordion-header"
-                                onclick="toggleAccordion(this)"
-                            >
-                                <h3>{{ item.title }}</h3>
-                                <span class="accordion-icon">▼</span>
-                            </div>
-                            <div class="accordion-content">
-                                <p>{{ item.content }}</p>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="muted-block" style="margin-top: 8px">
-                    <div>
-                        Acciones enviadas a: <code id="apiBase">/api/</code>
-                    </div>
-                    <div class="fs-hint">
-                        Consejo: en móvil usa modo horizontal para mejor visual.
-                    </div>
                 </div>
             </aside>
         </div>

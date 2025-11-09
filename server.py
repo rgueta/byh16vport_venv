@@ -139,67 +139,6 @@ def video_feed():
     )
 
 
-# ===========================================================
-# 🧭 RUTAS PARA ADMINISTRACIÓN DE TARJETAS NFC
-# ===========================================================
-
-# from functools import wraps
-
-
-# def login_required(f):
-#     @wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         if not session.get("logged_in"):
-#             return redirect(url_for("login_page"))
-#         return f(*args, **kwargs)
-#     return decorated_function
-
-# @app.route("/admin/learn/<state>", methods=["POST"])
-# def admin_learn(state):
-#     if state == "on":
-#         nfcModule.learn_mode = True
-#         logging.info("🧠 Modo aprendizaje ACTIVADO")
-#     else:
-#         nfcModule.learn_mode = False
-#         logging.info("🧠 Modo aprendizaje DESACTIVADO")
-#     return redirect(url_for("admin"))
-
-
-# @app.route("/api/cards", methods=["GET"])
-# # @login_required
-# def api_list_cards():
-#     cards = nfcModule.list_cards()
-#     keys = ["uid", "name", "level", "enabled", "timestamp"]
-#     return jsonify([dict(zip(keys, c)) for c in cards])
-
-
-# @app.route("/api/cards", methods=["POST"])
-# def api_add_card():
-#     data = request.get_json()
-#     uid = data.get("uid")
-#     name = data.get("name", "")
-#     level = data.get("level", "user")
-#     if not uid:
-#         return jsonify({"error": "UID requerido"}), 400
-#     nfcModule.add_card(uid, name, level)
-#     return jsonify({"message": "Tarjeta agregada"})
-
-
-# @app.route("/api/cards/<uid>", methods=["PUT"])
-# def api_update_card(uid):
-#     data = request.get_json()
-#     nfcModule.update_card(
-#         uid, name=data.get("name"), level=data.get("level"), enabled=data.get("enabled")
-#     )
-#     return jsonify({"message": "Tarjeta actualizada"})
-
-
-# @app.route("/api/cards/<uid>", methods=["DELETE"])
-# def api_delete_card(uid):
-#     nfcModule.remove_card(uid)
-#     return jsonify({"message": "Tarjeta eliminada"})
-
-
 @app.route("/login", methods=["GET", "POST"])
 def login_page():
     if request.method == "POST":
@@ -345,7 +284,6 @@ def broadcast_event(event, data):
     """Envía eventos NFC al panel /admin usando SocketIO"""
     try:
         socketio.emit(event, data)
-        logger.info(f"📡 Evento enviado a cliente: {event} -> {data}")
     except Exception as e:
         logger.error(f"Error en broadcast_event: {e}")
 

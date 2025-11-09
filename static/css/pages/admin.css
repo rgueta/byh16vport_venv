@@ -47,6 +47,10 @@ h1 {
     text-align: center;
 }
 
+#inputId {
+    background-color: lightgray;
+}
+
 /* Responsive para la tabla - Ocultar columnas progresivamente */
 /* Pantallas grandes (todas las columnas visibles) */
 .col-id {

@@ -252,9 +252,10 @@ img {
 }
 
 .accordion-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /*background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);*/
+    background-color: #3498db;
     color: white;
-    padding: 20px;
+    padding: 10px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
@@ -291,7 +292,7 @@ img {
 }
 
 .accordion-content.open {
-    padding: 20px;
+    padding: 5px;
     max-height: 2000px;
 }
 
@@ -378,7 +379,7 @@ label {
 
 .counter {
     text-align: center;
-    margin: 15px 0;
+    /*margin: 15px 0;*/
     color: #666;
     font-size: 14px;
     background: #e9ecef;
@@ -400,3 +401,4 @@ label {
 
 .fade-in {
     animation: fadeIn 0.3s ease;
+}

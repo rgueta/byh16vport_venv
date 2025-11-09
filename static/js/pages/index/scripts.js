@@ -1,7 +1,6 @@
 const STREAM_MJPEG = "/live.m3u8";
 const STREAM_HLS = "{{video_url}}"; // si no hay HLS, no es necesario
 const API_BASE = "/api"; // ejemplo: POST /api/open, /api/unlock, /api/snapshot, /api/talk
-const ADMIN_URL = "{{ url_for('admin') }}";
 
 var video = document.getElementById("videoStream");
 var videoSrc = "{{ video_url }}"; // Nombre de tu archivo M3U8
@@ -151,12 +150,12 @@ document.getElementById("talkBtn").addEventListener("click", async () => {
 
 // Fullscreen
 document.getElementById("adminBtn").addEventListener("click", () => {
-    window.location.href = ADMIN_URL;
+    window.location.href = "/admin";
 });
 
 // Reload stream
 document.getElementById("reloadBtn").addEventListener("click", () => {
-    window.open("/admin1", "_blank");
+    window.open("/admin");
 });
 
 // Thumbnail display helpers
