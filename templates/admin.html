@@ -2,132 +2,164 @@
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
-        <title>Panel NFC</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sección Colapsable con Control Externo</title>
         <link
             rel="stylesheet"
-            href="{{ url_for('static', filename='css/pages/admin.css') }}"
+            href="{{ url_for('static', filename='css/pages/admin1.css') }}"
         />
+        <script
+            src="https://kit.fontawesome.com/85c88a4976.js"
+            crossorigin="anonymous"
+        ></script>
     </head>
     <body>
-        <h1>🔐 Administración de Tarjetas NFC</h1>
-        <details class="card form-container">
-            <summary>
-                <h2>➕ Agregar/Editar Usuario</h2>
-            </summary>
-
-            <form id="userForm">
-                <div class="form-group-row">
-                    <div class="form-group">
-                        <label for="inputId">Id:</label>
-                        <input type="text" id="inputId" name="Id" required />
-                    </div>
-                    <div class="form-group">
-                        <label for="inputNombre">Nombre:</label>
-                        <input
-                            type="text"
-                            id="inputNombre"
-                            name="nombre"
-                            required
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="inputAPaterno">Apellido Paterno:</label>
-                        <input
-                            type="text"
-                            id="inputAPaterno"
-                            name="aPaterno"
-                            required
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="inputAMaterno">Apellido Materno:</label>
-                        <input type="text" id="inputAMaterno" name="aMaterno" />
-                    </div>
-                </div>
-
-                <div class="form-group-row">
-                    <div class="form-group">
-                        <label for="inputEmail">Email:</label>
-                        <input
-                            type="email"
-                            id="inputEmail"
-                            name="email"
-                            required
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="inputPwd">Contraseña (PWD):</label>
-                        <input
-                            type="password"
-                            id="inputPwd"
-                            name="pwd"
-                            placeholder="Dejar vacío para no cambiar"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="inputCell">Teléfono (Cell):</label>
-                        <input type="text" id="inputCell" name="cell" />
-                    </div>
-                </div>
-
-                <div class="form-group-row">
-                    <div class="form-group">
-                        <label for="selectTipo">Tipo ID:</label>
-                        <select id="selectTipo" name="tipo">
-                            <option value="">
-                                Selecciona un tipo de usuario
-                            </option>
-                            {% for id,tipo in tipoUsuario %}
-                            <option value="{{id}}">{{tipo}}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group-row control-row">
-                    <div>
-                        <label for="checkOperador">Operador:</label>
-                        <input
-                            type="checkbox"
-                            id="checkOperador"
-                            name="operador"
-                            value="1"
-                        />
-                    </div>
-
-                    <div>
-                        <label for="checkActivo">Activo:</label>
-                        <input
-                            type="checkbox"
-                            id="checkActivo"
-                            name="activo"
-                            value="1"
-                            checked
-                        />
-                    </div>
-                    <div>
-                        <button
-                            type="submit"
-                            id="saveButton"
-                            class="btn primary"
-                        >
-                            💾 Guardar Usuario
-                        </button>
-                        <button
-                            type="button"
-                            id="cancelButton"
-                            class="btn secondary"
-                            style="display: none"
-                        >
-                            Cancelar Edición
-                        </button>
-                    </div>
-                </div>
-            </form>
-            <p><a href="/">⬅️ Volver al videoportero</a></p>
-        </details>
+        <div class="form-group-row control-row">
+            <div>
+                <p style="padding: 0 20px 20px">
+                    <a href="/">⬅️ Volver al videoportero</a>
+                </p>
+            </div>
+            <div>
+                <h1>Gestión de Usuarios</h1>
+            </div>
+        </div>
 
         <div class="container">
+            <div class="form-section">
+                <details class="card form-container" id="userDetails">
+                    <summary>
+                        <h2>
+                            <i class="fa fa-puzzle-piece"></i>
+                            Agregar/Editar Usuario
+                        </h2>
+                    </summary>
+
+                    <form id="userForm">
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="inputId">Id:</label>
+                                <input
+                                    type="text"
+                                    id="inputId"
+                                    name="Id"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputNombre">Nombre:</label>
+                                <input
+                                    type="text"
+                                    id="inputNombre"
+                                    name="nombre"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputAPaterno"
+                                    >Apellido Paterno:</label
+                                >
+                                <input
+                                    type="text"
+                                    id="inputAPaterno"
+                                    name="aPaterno"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputAMaterno"
+                                    >Apellido Materno:</label
+                                >
+                                <input
+                                    type="text"
+                                    id="inputAMaterno"
+                                    name="aMaterno"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="inputEmail">Email:</label>
+                                <input
+                                    type="email"
+                                    id="inputEmail"
+                                    name="email"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputPwd">Contraseña:</label>
+                                <input
+                                    type="password"
+                                    id="inputPwd"
+                                    name="pwd"
+                                    placeholder="Dejar vacío para no cambiar"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="inputCell">Teléfono (Cell):</label>
+                                <input type="text" id="inputCell" name="cell" />
+                            </div>
+                        </div>
+
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="selectTipo">Tipo ID:</label>
+                                <select id="selectTipo" name="tipo">
+                                    <option value="">
+                                        Selecciona un tipo de usuario
+                                    </option>
+                                    {% for id,tipo in tipoUsuario %}
+                                    <option value="{{id}}">{{tipo}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group-row control-row">
+                            <div>
+                                <label for="checkOperador">Operador:</label>
+                                <input
+                                    type="checkbox"
+                                    id="checkOperador"
+                                    name="operador"
+                                    value="1"
+                                />
+                            </div>
+
+                            <div>
+                                <label for="checkActivo">Activo:</label>
+                                <input
+                                    type="checkbox"
+                                    id="checkActivo"
+                                    name="activo"
+                                    value="1"
+                                    checked
+                                />
+                            </div>
+                            <div>
+                                <button
+                                    type="submit"
+                                    id="saveButton"
+                                    class="btn primary"
+                                >
+                                    💾 Guardar Usuario
+                                </button>
+                                <button
+                                    type="button"
+                                    id="cancelButton"
+                                    class="btn secondary"
+                                    style="display: none"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </details>
+            </div>
+
             <h2>Tarjetas registradas</h2>
             <!------------------ Barra de búsqueda ---------------->
             <div class="search-box">
@@ -150,14 +182,14 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Email</th>
-                            <th>Tipo</th>
-                            <th>Teléfono</th>
-                            <th>Estado</th>
-                            <th>Operador</th>
-                            <th>Accion</th>
+                            <th class="col-id">ID</th>
+                            <th class="col-nombre">Nombre</th>
+                            <th class="col-email">Email</th>
+                            <th class="col-tipo">Tipo</th>
+                            <th class="col-cell">Teléfono</th>
+                            <th class="col-estado">Estado</th>
+                            <th class="col-operador">Operador</th>
+                            <th class="col-accion">Accion</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpoTabla">
@@ -178,11 +210,9 @@
             <div id="infoPaginacion"></div>
         </div>
 
-        <!-- JavaScript para manejar el envío del formulario -->
-        <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/pages/admin/paginado.js') }}"></script>
         <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
         <script src="{{ url_for('static', filename='js/pages/admin/sockets.js') }}"></script>
-        <div id="nfc-status"></div>
+        <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/paginado.js') }}"></script>
     </body>
 </html>

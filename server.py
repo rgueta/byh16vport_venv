@@ -440,20 +440,20 @@ def admin():
     )
 
 
-@app.route("/admin1")
-def admin1():
-    idx = 1
-    if "idx" in request.args:
-        idx = request.args["idx"]
+# @app.route("/admin1")
+# def admin1():
+#     idx = 1
+#     if "idx" in request.args:
+#         idx = request.args["idx"]
 
-    logging.warn(f"idx: {idx}")
+#     logging.warn(f"idx: {idx}")
 
-    usuarios = nfcModule.list_usuarios()
-    tipoUsuario = nfcModule.tabla_tipoUsuario()
+#     usuarios = nfcModule.list_usuarios()
+#     tipoUsuario = nfcModule.tabla_tipoUsuario()
 
-    return render_template(
-        "admin1.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
-    )
+#     return render_template(
+#         "admin1.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
+#     )
 
 
 @app.route("/admin/add", methods=["POST"])

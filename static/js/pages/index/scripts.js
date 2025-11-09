@@ -156,12 +156,7 @@ document.getElementById("adminBtn").addEventListener("click", () => {
 
 // Reload stream
 document.getElementById("reloadBtn").addEventListener("click", () => {
-    // reload image by adding cache-buster
-    mjpeg.src = STREAM_MJPEG + "?_t=" + Date.now();
-    setStatus(true);
-    hlsVideo.pause();
-    hlsVideo.style.display = "none";
-    mjpeg.style.display = "block";
+    window.open("/admin1", "_blank");
 });
 
 // Thumbnail display helpers
