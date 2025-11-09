@@ -73,7 +73,10 @@ h1 {
 }
 
 .col-accion {
-    display: table-cell;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 #tablaUsuarios table {
@@ -147,7 +150,7 @@ details[open] summary::after {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    padding: 20px;
+    padding: 10px;
     border-bottom: 1px solid #eee;
 }
 
@@ -197,7 +200,7 @@ select:focus {
 }
 
 .btn {
-    padding: 10px 20px;
+    padding: 10px 15px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
@@ -226,8 +229,6 @@ select:focus {
 .btn.external {
     background-color: #3498db;
     color: white;
-    width: 100%;
-    margin-bottom: 15px;
 }
 
 .btn.external:hover {

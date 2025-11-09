@@ -358,22 +358,49 @@ def broadcast_event(event, data):
 def on_usuario_detected(id):
     try:
         conn = nfcModule.sqlite3.connect(nfcModule.DB_PATH)
+        conn.row_factory = nfcModule.sqlite3.Row
         c = conn.cursor()
-        c.execute("SELECT nombre, activo FROM usuarios WHERE id=?", (id,))
+        c.execute(
+            "SELECT nombre, ap, am, pwd, email, cell, tipoId, fecha, activo, operador FROM usuarios WHERE id=?",
+            (id,),
+        )
         row = c.fetchone()
         conn.close()
-
         if row:
-            nombre, activo = row
+            nombre = row["nombre"]
+            ap = row["ap"]
+            am = row["am"]
+            pwd = row["pwd"]
+            email = row["email"]
+            cell = row["cell"]
+            tipoId = row["tipoId"]
+            fecha = row["fecha"]
+            activo = row["activo"]
+            operador = row["operador"]
         else:
             nombre = "Desconocido"
+            ap = ""
+            am = ""
+            pwd = ""
+            email = ""
+            cell = ""
+            tipoId = 0
+            fecha = (time.strftime("%Y-%m-%d %H:%M:%S"),)
             activo = 0
+            operador = 0
 
         last_usuario = {
             "id": id,
             "nombre": nombre,
+            "ap": ap,
+            "am": am,
+            "pwd": pwd,
+            "email": email,
+            "cell": cell,
+            "tipoId": tipoId,
+            "fecha": fecha,
             "activo": bool(activo),
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "operador": bool(operador),
         }
 
         logging.info(

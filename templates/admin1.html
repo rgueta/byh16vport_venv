@@ -14,12 +14,25 @@
         ></script>
     </head>
     <body>
-        <h1>Gestión de Usuarios</h1>
+        <div class="form-group-row control-row">
+            <div>
+                <p style="padding: 0 20px 20px">
+                    <a href="/">⬅️ Volver al videoportero</a>
+                </p>
+            </div>
+            <div>
+                <h1>Gestión de Usuarios</h1>
+            </div>
+        </div>
+
         <div class="container">
             <div class="form-section">
                 <details class="card form-container" id="userDetails">
                     <summary>
-                        <h2>➕ Agregar/Editar Usuario</h2>
+                        <h2>
+                            <i class="fa fa-puzzle-piece"></i>
+                            Agregar/Editar Usuario
+                        </h2>
                     </summary>
 
                     <form id="userForm">
@@ -76,7 +89,7 @@
                                 />
                             </div>
                             <div class="form-group">
-                                <label for="inputPwd">Contraseña (PWD):</label>
+                                <label for="inputPwd">Contraseña:</label>
                                 <input
                                     type="password"
                                     id="inputPwd"
@@ -139,14 +152,11 @@
                                     class="btn secondary"
                                     style="display: none"
                                 >
-                                    Cancelar Edición
+                                    Cancelar
                                 </button>
                             </div>
                         </div>
                     </form>
-                    <p style="padding: 0 20px 20px">
-                        <a href="/">⬅️ Volver al videoportero</a>
-                    </p>
                 </details>
             </div>
 

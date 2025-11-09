@@ -3,6 +3,7 @@ let porPagina = 25;
 let busquedaActual = "";
 let totalPaginas = 1;
 let data = {};
+let Modo = "edit";
 
 // elementos para collapse
 const userDetails = document.getElementById("userDetails");
@@ -86,7 +87,7 @@ function mostrarUsuarios(usuarios) {
          <td class="col-email">${usuario.email}</td>
          <td class="col-tipo">${usuario.tipo}</td>
          <td class="col-cell">${usuario.cell || ""}</td>
-         <td class="col-estado">${usuario.activo === "1" ? "Activo" : "Inactivo"}</td>
+         <td class="col-estado">${usuario.activo === 1 ? "Activo" : "Inactivo"}</td>
          <td class="col-operador">${usuario.operador === 1 ? "Si" : "No"}</td>
          <td class="acciones col-accion">
             <button class="btn btn-warning btn-sm btn-action edit-btn"
@@ -214,26 +215,43 @@ function mostrarLoading(mostrar) {
 }
 
 // Función para editar un usuario
-function editUser(userId) {
-    const user = data.usuarios.find((u) => u.id === userId);
+function editUser(userId, userFound = null) {
+    let user = null;
+    if (userFound) {
+        user = userFound;
+    } else {
+        user = data.usuarios.find((u) => u.id === userId);
+    }
 
-    if (user) {
+    const boton = document.getElementById("saveButton");
+    // Cambiar a modo edición/insertar
+    if (user.nombre == "Desconocido") {
+        Modo = "add";
+        user.nombre = "";
+
+        boton.textContent = "➕ Agregar Usuario";
+        boton.classList.add("btn");
+        boton.classList.add("external");
+    } else {
+        Modo = "edit";
+        boton.textContent = "💾 Actualizar Usuario";
+        boton.classList.add("btn");
+        boton.classList.add("primary");
+    }
+
+    if (user.nonbre != "Desconocido" || user.nonbre != "") {
         // Llenar el formulario con los datos del usuario
         document.getElementById("inputId").value = user.id;
         document.getElementById("inputNombre").value = user.nombre;
         document.getElementById("inputAPaterno").value = user.ap;
         document.getElementById("inputAMaterno").value = user.am || "";
         document.getElementById("inputEmail").value = user.email;
+        document.getElementById("inputPwd").value = user.pwd;
         document.getElementById("inputCell").value = user.cell || "";
         document.getElementById("selectTipo").value = user.tipoId;
         document.getElementById("checkOperador").checked = user.operador;
         document.getElementById("checkActivo").checked = user.activo;
 
-        // Cambiar a modo edición
-        isEditing = true;
-        currentEditId = userId;
-        document.getElementById("saveButton").textContent =
-            "💾 Actualizar Usuario";
         cancelButton.style.display = "inline-block";
 
         // Expandir la sección
@@ -243,13 +261,6 @@ function editUser(userId) {
     }
 }
 
-function nuevoUsuario() {
-    document.getElementById("inputNombre").value = "";
-    document.getElementById("inputAPaterno").value = "";
-    document.getElementById("inputAMaterno").value = "";
-    document.getElementById("inputEmail").value = "";
-    document.getElementById("inputCell").value = "";
-    document.getElementById("selectTipo").value = "";
-    document.getElementById("checkOperador").checked = false;
-    document.getElementById("checkActivo").checked = user.activo;
+function confirmarProceso(msg) {
+    return confirm(msg);
 }

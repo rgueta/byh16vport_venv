@@ -3,22 +3,27 @@ const Nombre = document.getElementById("nombre");
 const tipoUsuario = document.getElementById("tipoUsuario");
 
 const socket = io();
-socket.on("nfc_access", (data) => {
-    Id.value = data.id;
-    console.log("Tarjeta detectada:", data);
-    const status = data.activo ? "✅ Acceso permitido" : "🚫 Acceso denegado";
-    const color = data.activo ? "green" : "red";
+socket.on("nfc_access", (userFound) => {
+    Id.value = userFound.id;
+    console.log("Tarjeta detectada:", userFound);
+    const status = userFound.activo
+        ? "✅ Acceso permitido"
+        : "🚫 Acceso denegado";
+    const color = userFound.activo ? "green" : "red";
     const cardInfo = `
      <div style="padding:10px;margin-top:10px;border:2px solid ${color};border-radius:8px">
      <b>${status}</b><br>
-     UID: ${data.id}<br>
-     Nombre: ${data.nombre || "Desconocido"}
+     UID: ${userFound.id}<br>
+     Nombre: ${userFound.nombre || "Desconocido"}
      </div>`;
 
     const nfc_status = document.getElementById("nfc-status");
     if (nfc_status !== null) {
         document.getElementById("nfc-status").innerHTML = cardInfo;
     }
+
+    // montar usuario si se encontro
+    editUser(userFound.id, userFound);
 });
 
 tablaUsuarios.addEventListener("click", (e) => {
