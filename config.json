@@ -24,7 +24,8 @@
     },
     "security": {
         "api_token": "1234",
-        "pwd": "proxyTejuino"
+        "pwd": "proxyTejuino",
+        "sessionTime": 30
     },
     "logging": {
         "level": "INFO"

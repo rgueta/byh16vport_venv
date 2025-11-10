@@ -47,7 +47,10 @@ async function cargarUsuarios(pagina = 1) {
         });
 
         const response = await fetch(`/admin/usuarios?${params}`);
-        // const data = await response.json();
+        if (response.status === 401) {
+            window.location.href = "/login";
+            return; // Detener la ejecución de la función aquí
+        }
         data = await response.json();
 
         if (response.ok) {

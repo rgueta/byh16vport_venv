@@ -20,6 +20,7 @@ from picamera2 import Picamera2
 import io, threading, time, logging, json, sys, math
 import queue, nfcModule, db
 from functools import wraps
+from datetime import timedelta
 
 
 # ------------------------------------------------------------------
@@ -55,9 +56,6 @@ def load_config(path="config.json"):
 
 config = load_config()
 last_usuario = {"id": None, "nombre": None, "activo": False, "timestamp": None}
-
-ADMIN_USER = config.get("admin", {}).get("username", "admin")
-ADMIN_PASS = config.get("admin", {}).get("password", "1234")
 
 
 # ------------------------------------------------------------------
@@ -115,9 +113,19 @@ threading.Thread(target=capture_frames, daemon=True).start()
 # ------------------------------------------------------------------
 app = Flask(__name__)
 app.secret_key = config["security"]["pwd"]
+
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-# app.secret_key = "supersecretkey"  # cambia esta cadena
+# Configurar expiración de sesión
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
+    minutes=config["security"]["sessionTime"]
+)
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True  # Renovar con cada request
+
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
 
 # Decorador para requerir login
@@ -127,6 +135,21 @@ def login_required(f):
         if "user_id" not in session:
             flash("Por favor inicia sesión para acceder a esta página.", "warning")
             return redirect(url_for("login"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+# decorador solo para los aPI
+def login_required_api(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            # Devuelve un JSON de error con el código HTTP 401 Unauthorized
+            return jsonify(
+                {"status": "error", "message": "Session expired or user not authorized"}
+            ), 401
+
         return f(*args, **kwargs)
 
     return decorated_function
@@ -491,6 +514,7 @@ def guardar_usuario():
 
 # ===========   Paginado  =================================
 @app.route("/admin/usuarios", methods=["GET"])
+@login_required_api
 def obtener_usuarios():
     try:
         # Obtener parámetros de paginación
