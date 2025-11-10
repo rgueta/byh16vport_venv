@@ -1,5 +1,5 @@
 import sqlite3
-import logging
+import logging, bcrypt
 
 
 DB_PATH = "/home/bytheg/vport/vport.db"
@@ -37,21 +37,74 @@ def init_db():
     conn.close()
 
 
+def hash_password(password):
+    """Encriptar contraseña"""
+    # Generar salt y hash la contraseña
+    salt = bcrypt.gensalt()
+    password_hash = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return password_hash.decode("utf-8")
+
+
+def verify_password(password, password_hash):
+    """Verificar contraseña encriptada"""
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+    except Exception as e:
+        logger.error(f"Error al verificar contraseña: {e}")
+        return False
+
+
+def verificar_usuario(username, password):
+    """Verificar credenciales de usuario"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute(
+            """
+            SELECT usr.*, tu.tipo
+            FROM usuarios AS usr
+            INNER JOIN tipoUsuario AS tu ON usr.tipoId = tu.id
+            WHERE usr.nombre = ?""",
+            (username,),
+        )
+        usuario = c.fetchone()
+        conn.close()
+
+        if usuario and verify_password(password, usuario["pwd"]):
+            return usuario
+        return None
+
+    except Exception as e:
+        logger.error(f"Error al verificar usuario: {e}")
+        return None
+
+
 # --- CRUD básico ---
 def add_usuario(
     id, nombre, ap, am, pwd, email, cell="", tipoId=2, activo=1, operador=0
 ):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        """
-        INSERT OR REPLACE INTO usuarios (id, nombre, ap, am, pwd, email,
-        cell, tipoId, activo, operador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (id, nombre, ap, am, pwd, email, cell, tipoId, activo, operador),
-    )
-    conn.commit()
-    conn.close()
-    logging.info(f"🆕 Usuario agregado: {id}, {nombre}")
+    try:
+        pwd_hash = hash_password(pwd)
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(
+            """
+            INSERT OR REPLACE INTO usuarios (id, nombre, ap, am, pwd, email,
+            cell, tipoId, activo, operador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (id, nombre, ap, am, pwd_hash, email, cell, tipoId, activo, operador),
+        )
+        conn.commit()
+        user_id = c.lastrowid
+        conn.close()
+        logging.info(f"🆕 Usuario agregado: {id}, {nombre}")
+
+        return user_id
+    except sqlite3.IntegrityError:
+        raise ValueError("El usuario ya existe")
+    except Exception as e:
+        logger.error(f"Error al crear usuario: {e}")
+        raise
 
 
 def update_usuario(id, nombre, tipoId, activo):
@@ -75,10 +128,10 @@ def remove_usuario(id):
 
 def list_usuarios():
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("""
-                SELECT usr.id, usr.nombre, usr.ap, usr.am, tu.tipo,
-                                usr.activo, usr.email,usr.pwd FROM usuarios AS usr
+                SELECT usr.*, tu.tipo FROM usuarios AS usr
                 INNER JOIN tipoUsuario AS tu
                 ON usr.tipoId = tu.id
                 """)
@@ -102,6 +155,7 @@ def tabla_tipoUsuario():
 
 def usuario_byId(id):
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("SELECT * FROM usuarios WHERE id=?", (id,))
     row = c.fetchone()

@@ -12,12 +12,14 @@ from flask import (
     session,
     stream_with_context,
     g,
+    flash,
 )
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 from flask_cors import CORS
 from picamera2 import Picamera2
 import io, threading, time, logging, json, sys, math
 import queue, nfcModule, db
+from functools import wraps
 
 
 # ------------------------------------------------------------------
@@ -112,9 +114,72 @@ threading.Thread(target=capture_frames, daemon=True).start()
 # 🌐 Flask + SocketIO
 # ------------------------------------------------------------------
 app = Flask(__name__)
+app.secret_key = config["security"]["pwd"]
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-app.secret_key = "supersecretkey"  # cambia esta cadena
+# app.secret_key = "supersecretkey"  # cambia esta cadena
+
+
+# Decorador para requerir login
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Por favor inicia sesión para acceder a esta página.", "warning")
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+# Decorador para requerir rol admin
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Por favor inicia sesión.", "warning")
+            return redirect(url_for("login"))
+        if session.get("role") != "admin":
+            flash("No tienes permisos de administrador.", "danger")
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    # Si ya está logueado, redirigir al index
+    if "user_id" in session:
+        return redirect(url_for("admin"))
+
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        usuario = db.verificar_usuario(username, password)
+
+        if usuario:
+            # Guardar datos en sesión
+            session["user_id"] = usuario["id"]
+            session["username"] = usuario["nombre"]
+            session["role"] = usuario["tipo"]
+
+            flash(f"¡Bienvenido {username}!", "success")
+
+            # Redirigir a la página que intentaba acceder o al index
+            next_page = request.args.get("next")
+            return redirect(next_page) if next_page else redirect(url_for("admin"))
+        else:
+            flash("Usuario o contraseña incorrectos.", "danger")
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 
 def generate_stream():
@@ -129,7 +194,9 @@ def generate_stream():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template(
+        "index.html", username=session.get("username"), role=session.get("role")
+    )
 
 
 @app.route("/video_feed")
@@ -137,24 +204,6 @@ def video_feed():
     return Response(
         generate_stream(), mimetype="multipart/x-mixed-replace; boundary=frame"
     )
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login_page():
-    if request.method == "POST":
-        user = request.form.get("username")
-        pw = request.form.get("password")
-        if user == ADMIN_USER and pw == ADMIN_PASS:
-            session["logged_in"] = True
-            return redirect(url_for("admin_page"))
-        return render_template("login.html", error="Usuario o contraseña incorrectos")
-    return render_template("login.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login_page"))
 
 
 # ------------------------------------------------------------------
@@ -299,7 +348,7 @@ def on_usuario_detected(id):
         conn.row_factory = db.sqlite3.Row
         c = conn.cursor()
         c.execute(
-            "SELECT nombre, ap, am, pwd, email, cell, tipoId, fecha, activo, operador FROM usuarios WHERE id=?",
+            "SELECT * FROM usuarios WHERE id=?",
             (id,),
         )
         row = c.fetchone()
@@ -363,18 +412,23 @@ threading.Thread(target=listen_button, daemon=True).start()
 #  PANEL DE ADMINISTRACIÓN
 # ==========================
 @app.route("/admin")
+@admin_required
 def admin():
     idx = 1
     if "idx" in request.args:
         idx = request.args["idx"]
 
-    logging.warn(f"idx: {idx}")
+    logging.warning(f"idx: {idx}")
 
     usuarios = db.list_usuarios()
     tipoUsuario = db.tabla_tipoUsuario()
 
     return render_template(
-        "admin.html", usuarios=usuarios, tipoUsuario=tipoUsuario, nfcModule=nfcModule
+        "admin.html",
+        usuarios=usuarios,
+        tipoUsuario=tipoUsuario,
+        nfcModule=nfcModule,
+        username=session.get("username"),
     )
 
 

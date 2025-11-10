@@ -23,7 +23,8 @@
         "pullup": true
     },
     "security": {
-        "api_token": "1234"
+        "api_token": "1234",
+        "pwd": "proxyTejuino"
     },
     "logging": {
         "level": "INFO"
