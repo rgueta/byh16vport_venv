@@ -278,6 +278,7 @@ def activate_lock(duration=None):
     active_high = config["lock"]["active_high"]
 
     try:
+        logger.info(f"LOCK_GPIO_PIN: {LOCK_GPIO_PIN}")
         GPIO.output(LOCK_GPIO_PIN, GPIO.HIGH if active_high else GPIO.LOW)
         logger.info(f"🔓 Cerradura activada ({duration}s)")
         socketio.emit("door_status", {"status": "open"})
