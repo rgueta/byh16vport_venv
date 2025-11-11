@@ -10,6 +10,18 @@ const userDetails = document.getElementById("userDetails");
 const toggleButton = document.getElementById("toggleSection");
 const sectionStatus = document.getElementById("sectionStatus");
 
+// Cargar usuarios al iniciar
+document.addEventListener("DOMContentLoaded", function () {
+    cargarUsuarios();
+});
+
+// Búsqueda con Enter
+document.getElementById("busqueda").addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+        buscarUsuarios();
+    }
+});
+
 // Función para actualizar el estado visual
 function updateSectionStatus() {
     if (userDetails.open) {
@@ -22,18 +34,6 @@ function updateSectionStatus() {
         toggleButton.textContent = "➕ Expandir Sección de Usuario";
     }
 }
-
-// Cargar usuarios al iniciar
-document.addEventListener("DOMContentLoaded", function () {
-    cargarUsuarios();
-});
-
-// Búsqueda con Enter
-document.getElementById("busqueda").addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-        buscarUsuarios();
-    }
-});
 
 // Función principal para cargar usuarios
 async function cargarUsuarios(pagina = 1) {
@@ -251,7 +251,7 @@ function editUser(userId, userFound = null) {
         document.getElementById("inputEmail").value = user.email;
         document.getElementById("inputPwd").value = user.pwd;
         document.getElementById("inputCell").value = user.cell || "";
-        document.getElementById("selectTipo").value = user.tipoId;
+        document.getElementById("selectTipo").value = user.tipoId || "-1";
         document.getElementById("checkOperador").checked = user.operador;
         document.getElementById("checkActivo").checked = user.activo;
 
