@@ -1,8 +1,9 @@
 import sqlite3
-import logging, bcrypt
+import logging, bcrypt, json, os
 
 
 DB_PATH = "/home/bytheg/vport/vport.db"
+CONFIG_FILE = "config.json"
 
 
 # --- Inicialización DB ---
@@ -171,3 +172,43 @@ def is_usuario_activo(id):
     conn.close()
     print(f"row : {row} | row[0]: {row[0]}")
     return row is not None and row[0] == 1
+
+
+# ==========  Configuracion ============================
+
+
+def load_config():
+    """Cargar configuración desde el archivo JSON"""
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+
+def save_config(config_dict):
+    """Guardar configuración en el archivo JSON"""
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config_dict, f, indent=4)
+
+
+def verificarUsuarioCfg(username, pwd):
+    try:
+        # Leer el archivo JSON existente
+        with open("config.json", "r", encoding="utf-8") as f:
+            datos = json.load(f)
+
+        if datos["admin"]["username"] == username and datos["admin"]["password"] == pwd:
+            return {
+                "id": datos["admin"]["username"],
+                "nombre": datos["admin"]["username"],
+                "tipo": datos["admin"]["username"],
+            }
+        else:
+            return None
+
+    except FileNotFoundError:
+        print(f"El archivo config.json no existe")
+    except json.JSONDecodeError:
+        print("Error al decodificar el JSON")
+    except Exception as e:
+        print(f"Error inesperado: {e}")

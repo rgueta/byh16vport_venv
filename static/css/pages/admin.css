@@ -20,19 +20,13 @@ h1 {
 }
 
 .container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    /*flex-wrap: wrap;*/
-}
-
-.controls {
-    flex: 1;
-    min-width: 250px;
     background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    /*max-width: 400px;*/
+    width: 100%;
+    text-align: center;
 }
 
 .form-section {
@@ -40,7 +34,16 @@ h1 {
 }
 
 .search-box {
+    display: flex;
+    justify-content: space-between;
+    width: 98%;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-around;
     width: 90%;
+    padding: 20px;
 }
 
 #tablaUsuarios table thead tr th {
@@ -268,20 +271,22 @@ a:hover {
     color: #721c24;
 }
 
+/*---------  responsive -----*/
 @media (max-width: 768px) {
     .container {
+        /*width: 90%;*/
         flex-direction: column;
     }
 
     .form-group-row {
         flex-direction: column;
-        gap: 15px;
+        gap: 5px;
     }
 
     .control-row {
         flex-direction: column;
         gap: 15px;
-        align-items: flex-start;
+        /*align-items: flex-start;*/
     }
 
     th.col-email,

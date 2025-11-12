@@ -137,8 +137,12 @@ function generarPaginacionHTML(paginacion) {
 
     // Botón Primera página
     if (paginacion.has_prev) {
-        html += `<button onclick="irAPagina(1)">« Primera</button>`;
-        html += `<button onclick="irAPagina(${paginacion.pagina_actual - 1})">‹ Anterior</button>`;
+        html += `<button onclick="irAPagina(1)"><i
+            class="fa fa-angle-double-left"
+            aria-hidden="true"
+        ></i> </button>`;
+        html += `<button onclick="irAPagina(${paginacion.pagina_actual - 1})">
+        <i class="fa fa-angle-left" aria-hidden="true"></i> </button>`;
     }
 
     // Números de página (mostrar solo algunas páginas alrededor de la actual)
@@ -150,7 +154,7 @@ function generarPaginacionHTML(paginacion) {
 
     for (let i = inicio; i <= fin; i++) {
         if (i === paginacion.pagina_actual) {
-            html += `<button disabled style="background-color: #007bff; color: white;">${i}</button>`;
+            html += `<button disabled style="background-color: #007bff; color: white;font-size:1.3rem">${i}</button>`;
         } else {
             html += `<button onclick="irAPagina(${i})">${i}</button>`;
         }
@@ -158,8 +162,10 @@ function generarPaginacionHTML(paginacion) {
 
     // Botón Última página
     if (paginacion.has_next) {
-        html += `<button onclick="irAPagina(${paginacion.pagina_actual + 1})">Siguiente ›</button>`;
-        html += `<button onclick="irAPagina(${paginacion.total_paginas})">Última »</button>`;
+        html += `<button onclick="irAPagina(${paginacion.pagina_actual + 1})">
+        <i class="fa fa-angle-right" aria-hidden="true"></i></button>`;
+        html += `<button onclick="irAPagina(${paginacion.total_paginas})">
+        <i class="fa fa-angle-double-right" aria-hidden="true"></i></button>`;
     }
 
     return html;
@@ -249,7 +255,7 @@ function editUser(userId, userFound = null) {
         document.getElementById("inputAPaterno").value = user.ap;
         document.getElementById("inputAMaterno").value = user.am || "";
         document.getElementById("inputEmail").value = user.email;
-        document.getElementById("inputPwd").value = user.pwd;
+        document.getElementById("inputPwd").value = user.pwd || "";
         document.getElementById("inputCell").value = user.cell || "";
         document.getElementById("selectTipo").value = user.tipoId || "-1";
         document.getElementById("checkOperador").checked = user.operador;

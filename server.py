@@ -20,7 +20,7 @@ from picamera2 import Picamera2
 import io, threading, time, logging, json, sys, math
 import queue, nfcModule, db
 from functools import wraps
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 # ------------------------------------------------------------------
@@ -180,7 +180,8 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        usuario = db.verificar_usuario(username, password)
+        # usuario = db.verificar_usuario(username, password)
+        usuario = db.verificarUsuarioCfg(username, password)
 
         if usuario:
             # Guardar datos en sesión
@@ -202,6 +203,10 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
+    if request.referrer:
+        logging.warning(f"request.referrer: {request.referrer}")
+        if "admin" in request.referrer:
+            return redirect(url_for("index"))
     return redirect(url_for("login"))
 
 
@@ -442,8 +447,6 @@ def admin():
     if "idx" in request.args:
         idx = request.args["idx"]
 
-    logging.warning(f"idx: {idx}")
-
     usuarios = db.list_usuarios()
     tipoUsuario = db.tabla_tipoUsuario()
 
@@ -454,6 +457,44 @@ def admin():
         nfcModule=nfcModule,
         username=session.get("username"),
     )
+
+
+@app.route("/upd-pwd", methods=["POST"])
+@admin_required
+def updPwd():
+    try:
+        pwd = request.get_json()
+        if not pwd:
+            return jsonify(
+                {"success": False, "error": "La nueva contraseña es requerida"}
+            )
+
+        newPwd = pwd["new_pwd"]
+        config = db.load_config()
+
+        # Verificar que existe la sección admin
+        if "admin" not in config:
+            return jsonify(
+                {
+                    "success": False,
+                    "error": "Sección admin no encontrada en la configuración",
+                }
+            )
+
+        # Actualizar solo la contraseña del admin
+        config["admin"]["password"] = newPwd
+        config["admin"]["updated_at"] = datetime.now().isoformat()
+
+        db.save_config(config)
+        return jsonify(
+            {
+                "success": True,
+                "message": "Contraseña de admin actualizada correctamente",
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/admin/add", methods=["POST"])

@@ -8,6 +8,10 @@
             rel="stylesheet"
             href="{{ url_for('static', filename='css/pages/admin.css') }}"
         />
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='css/pages/modal.css') }}"
+        />
         <script
             src="https://kit.fontawesome.com/85c88a4976.js"
             crossorigin="anonymous"
@@ -17,7 +21,7 @@
         <div class="form-group-row control-row">
             <div>
                 <p style="padding: 0 20px 20px">
-                    <a href="/">⬅️ Volver al videoportero</a>
+                    <a href="/logout">⬅️ Volver al videoportero</a>
                 </p>
             </div>
             <div>
@@ -89,7 +93,7 @@
                                     required
                                 />
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="display: none">
                                 <label for="inputPwd">Contraseña:</label>
                                 <input
                                     type="password"
@@ -160,8 +164,116 @@
                     </form>
                 </details>
             </div>
+            <div class="middle-section">
+                <h2>Tarjetas registradas</h2>
 
-            <h2>Tarjetas registradas</h2>
+                <!--========================Modal password   =================================-->
+                <div>
+                    <button class="btn-primary" onclick="openModal()">
+                        <i
+                            class="fa fa-key"
+                            style="margin-right: 10px"
+                            aria-hidden="true"
+                        ></i>
+                        Editar Contraseña
+                    </button>
+                </div>
+            </div>
+            <!-- Modal para Editar Contraseña -->
+            <div class="modal" id="editPasswordModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Editar Contraseña</h3>
+                        <button class="close-btn" onclick="closeModal()">
+                            ×
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editPasswordForm">
+                            <div class="form-group">
+                                <label for="editPassword" class="form-label"
+                                    >Nueva Contraseña:</label
+                                >
+                                <div class="input-group">
+                                    <input
+                                        type="password"
+                                        class="form-control"
+                                        id="editPassword"
+                                        required
+                                        placeholder="Ingresa la nueva contraseña"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="btn-toggle-password"
+                                        onclick="togglePassword('editPassword')"
+                                    >
+                                        👁️
+                                    </button>
+                                </div>
+                                <div class="password-strength">
+                                    <div
+                                        class="strength-bar"
+                                        id="passwordStrength"
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirmPassword" class="form-label"
+                                    >Confirmar Contraseña:</label
+                                >
+                                <div class="input-group">
+                                    <input
+                                        type="password"
+                                        class="form-control"
+                                        id="confirmPassword"
+                                        required
+                                        placeholder="Confirma la contraseña"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="btn-toggle-password"
+                                        onclick="togglePassword('confirmPassword')"
+                                    >
+                                        👁️
+                                    </button>
+                                </div>
+                                <div class="error-text" id="passwordMatchError">
+                                    ❌ Las contraseñas no coinciden
+                                </div>
+                            </div>
+
+                            <!-- Mensajes de resultado -->
+                            <div
+                                id="successMessage"
+                                class="alert alert-success"
+                            ></div>
+                            <div
+                                id="errorMessage"
+                                class="alert alert-error"
+                            ></div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            onclick="closeModal()"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-success"
+                            id="submitBtn"
+                            onclick="updatePassword()"
+                        >
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!------------------ Barra de búsqueda ---------------->
             <div class="search-box">
                 <input
@@ -211,9 +323,11 @@
             <div id="infoPaginacion"></div>
         </div>
 
+        <!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>-->
         <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
         <script src="{{ url_for('static', filename='js/pages/admin/sockets.js') }}"></script>
         <script src="{{ url_for('static', filename='js/pages/admin/crud.js') }}"></script>
         <script src="{{ url_for('static', filename='js/pages/admin/paginado.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/pages/admin/editPwd.js') }}"></script>
     </body>
 </html>
