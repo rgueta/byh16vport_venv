@@ -50,11 +50,9 @@ function capturar() {
 const API_TOKEN = "1234";
 
 async function abrirPuerta() {
-    const btn = document.getElementById("unlockBtn");
     const status = document.getElementById("nfc-status");
     const beep = document.getElementById("dooropen");
 
-    btn.disabled = true;
     status.textContent = "⏳ Enviando señal...";
     status.style.color = "#cccccc";
 
@@ -87,7 +85,6 @@ async function abrirPuerta() {
         status.style.color = "#ff9800";
     } finally {
         setTimeout(() => {
-            btn.disabled = false;
             status.textContent = "";
         }, 4000);
     }
@@ -151,11 +148,6 @@ document.getElementById("talkBtn").addEventListener("click", async () => {
 // Fullscreen
 document.getElementById("adminBtn").addEventListener("click", () => {
     window.location.href = "/admin";
-});
-
-// Reload stream
-document.getElementById("reloadBtn").addEventListener("click", () => {
-    window.open("/admin");
 });
 
 // Thumbnail display helpers

@@ -5,10 +5,7 @@
         "updated_at": "2025-11-11T17:30:25.011224"
     },
     "camera": {
-        "resolution": [
-            640,
-            480
-        ],
+        "resolution": [640, 480],
         "format": "XBGR8888",
         "frame_interval": 0.05
     },
@@ -22,7 +19,8 @@
         "active_high": true,
         "unlock_duration": 3.0
     },
-    "button": {
+
+    "timbre": {
         "gpio_pin": 27,
         "pullup": true
     },

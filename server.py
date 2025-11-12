@@ -241,24 +241,25 @@ try:
     import RPi.GPIO as GPIO
 
     LOCK_GPIO_PIN = config["lock"]["gpio_pin"]
+
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(
         LOCK_GPIO_PIN,
         GPIO.OUT,
         initial=GPIO.LOW if config["lock"]["active_high"] else GPIO.HIGH,
     )
-    logger.info(f"✅ GPIO listo (pin {LOCK_GPIO_PIN}) para cerradura")
+    logger.info(f"✅ GPIO listo (pin {LOCK_GPIO_PIN}) para magneto remota")
 
-    # Botón físico
-    BTN_GPIO_PIN = config["button"]["gpio_pin"]
+    # Botón timbre
+    BTN_GPIO_PIN = config["timbre"]["gpio_pin"]
     GPIO.setup(
         BTN_GPIO_PIN,
         GPIO.IN,
         pull_up_down=GPIO.PUD_UP
-        if config["button"].get("pullup", True)
+        if config["timbre"].get("pullup", True)
         else GPIO.PUD_DOWN,
     )
-    logger.info(f"✅ GPIO pin {BTN_GPIO_PIN} configurado como botón de solicitud")
+    logger.info(f"✅ GPIO pin {BTN_GPIO_PIN} configurado como botón Timbre")
 except Exception as e:
     logger.warning(f"⚠️ No se pudo inicializar GPIO: {e}")
     GPIO = None
@@ -314,17 +315,37 @@ def open():
 # 🛎️ Escucha del botón físico
 # ------------------------------------------------------------------
 def listen_button():
+    """Escucha el botón fisico."""
+    if GPIO is None:
+        return
+    last_press = 0
+    while running:
+        if GPIO.input(BUTTON_GPIO_PIN) == (
+            GPIO.LOW if config["button"].get("pullup", True) else GPIO.HIGH
+        ):
+            now = time.time()
+            if now - last_press > 2:  # anti-rebote
+                logger.info("🚨 Botón físico presionado")
+                # buzz(0.4)
+                last_press = now
+        time.sleep(0.1)
+
+
+# ------------------------------------------------------------------
+# 🛎️ Escucha del botón timbre
+# ------------------------------------------------------------------
+def listen_timbre():
     """Escucha el botón y notifica a los clientes web."""
     if GPIO is None:
         return
     last_press = 0
     while running:
         if GPIO.input(BTN_GPIO_PIN) == (
-            GPIO.LOW if config["button"].get("pullup", True) else GPIO.HIGH
+            GPIO.LOW if config["timbre"].get("pullup", True) else GPIO.HIGH
         ):
             now = time.time()
             if now - last_press > 2:  # anti-rebote
-                logger.info("🚨 Botón físico presionado: solicitud de apertura")
+                logger.info("🚨 Botón timbre: solicitud de apertura")
                 buzz(0.4)
                 socketio.emit(
                     "alert_request", {"message": "🔔 Alguien presionó el timbre"}
@@ -434,7 +455,7 @@ def on_usuario_detected(id):
         logging.error(f"⚠️ Error en on_usuario_detected: {e}")
 
 
-threading.Thread(target=listen_button, daemon=True).start()
+threading.Thread(target=listen_timbre, daemon=True).start()
 
 
 # =========================
