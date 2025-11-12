@@ -1,3 +1,7 @@
+// version
+const appVersion = "v1.0.0";
+document.getElementById("version-display").textContent = appVersion;
+
 const STREAM_MJPEG = "/live.m3u8";
 const STREAM_HLS = "{{video_url}}"; // si no hay HLS, no es necesario
 const API_BASE = "/api"; // ejemplo: POST /api/open, /api/unlock, /api/snapshot, /api/talk
