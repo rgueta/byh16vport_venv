@@ -60,6 +60,8 @@ document
                     if (data.redirect) {
                         window.location.href = data.redirect;
                     }
+
+                    cargarUsuarios();
                 })
                 .catch((error) => {
                     console.error("Error:", error);
